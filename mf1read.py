@@ -7,19 +7,19 @@ Gui Demo for much of the structure.
 
 import os
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
-import re
 from PySide import QtCore
 from PySide import QtGui
+matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 
 #project specific items
 
-#git test
 
-import cube_loader_nonglobal
-import cube_loader_global
+from default import DefaultValues
+import cube_loader
 
 class AppForm(QtGui.QMainWindow):
     """Gui Application to display Data Cube"""
@@ -37,10 +37,13 @@ class AppForm(QtGui.QMainWindow):
         self.main_frame = QtGui.QWidget()
         self.filename, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
         #self.filename = "C:/Users/JG/Documents/College Documents/2013 - Summer/lbl/Programming project/spectral maps/RHK_002.mf1"
-        print self.filename
+        print('Reading file: %s'%self.filename)
+        
+        self.default_values = DefaultValues(self.filename)
         self.open_initial_settings()
         
-        self.mf1 = self.make_cube()
+        self.mf1 = cube_loader.Mf1File(self.filename, self.dimension1,
+                                       self.dimension2, self.globalwavelength)
             
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
@@ -127,27 +130,11 @@ class AppForm(QtGui.QMainWindow):
             shortcut='F1', slot=self.on_about, 
             tip='About Mf1Reader')
         self.add_actions(self.help_menu, (about_action,))
-
-    def dimension_finder(self):
-        """finds the picture dimension"""
-        dimension = re.search('\d+x\d+',self.text_header).group()
-        dimension1 = re.findall('\d+',dimension)[0]
-        dimension1 = float(dimension1)
-        dimension2 = re.findall('\d+',dimension)[1]
-        dimension2 = float(dimension2)
-        return (dimension1,dimension2)
         
     def disconnect(self):
         """disconnect all the stored connection ids"""
         self.img.figure.canvas.mpl_disconnect(self.cidpress) 
         
-    def make_cube(self):
-        if self.globalwavelength:
-            mf1 = cube_loader_global.Mf1File(self.filename, self.dimension1, self.dimension2)
-        else:
-            mf1 = cube_loader_nonglobal.Mf1File(self.filename, self.dimension1, self.dimension2)
-        return mf1
-
     def open_control(self):
         self.control = ControlWindow()
         self.control.c.mincolor_sig.connect(self.update_mincolor)
@@ -170,14 +157,11 @@ class AppForm(QtGui.QMainWindow):
         calls the Initial Settings window and changes the default values
         if necessary.
         """
-        with open(self.filename,'rb') as fid:
-            self.text_header=fid.read(2048)
-        try:
-            self.dimension1, self.dimension2 = self.dimension_finder()
-        except:
-            self.dimension1, self.dimension2 = 0,0
-            
-        self.initialsettings = InitialSettingsWindow(self.dimension1, self.dimension2) 
+        self.dimension1, self.dimension2 = self.default_values.default_dimensions() 
+        self.global_bool = self.default_values.default_global()
+        self.initialsettings = InitialSettingsWindow(self.dimension1,
+                                                     self.dimension2,
+                                                     self.global_bool) 
         self.initialsettings.exec_()
         
         if self.initialsettings.result() and self.initialsettings.dimension1Edit.text()!='':
@@ -361,7 +345,7 @@ class AppForm(QtGui.QMainWindow):
         #xcoordinates and ycoordinates start from 0
         self.xcoordinate = xcoordinate
         self.ycoordinate = ycoordinate
-        self.img2 = ax2.plot(self.mf1.xdata[:,ycoordinate, xcoordinate],
+        self.img2 = ax2.plot(self.mf1.xcube[:,ycoordinate, xcoordinate],
                                   self.mf1.ycube[:,ycoordinate,xcoordinate],'.')
         plt.ylim(ymin=-self.maxval/10, ymax=self.maxval)
         plt.xlabel('$\lambda$ [nm]')
@@ -378,7 +362,7 @@ class AppForm(QtGui.QMainWindow):
         self.img = ax.imshow(self.slicedata, interpolation='nearest',
                               clim = (0,self.maxval))
         ax.set_title('Current Slice Wavelength:%0.0f '
-                           %float(self.mf1.xdata[slice1,0,0]))
+                           %float(self.mf1.xcube[slice1,0,0]))
         plt.yticks([])
         plt.xticks([])
         return self.img
@@ -386,7 +370,7 @@ class AppForm(QtGui.QMainWindow):
     def update_single_graph(self, xcoordinate, ycoordinate):
         """updates the graph on screen with the given x and y coordinates"""
         self.ax2.cla()
-        self.img2 = self.ax2.plot(self.mf1.xdata[:,ycoordinate, xcoordinate],
+        self.img2 = self.ax2.plot(self.mf1.xcube[:,ycoordinate, xcoordinate],
                                   self.mf1.ycube[:,ycoordinate, xcoordinate],'.')
         self.ax2.set_ylim(ymin=-self.maxval/10, ymax=self.maxval)
         self.ax2.set_xlabel('$\lambda$ [nm]')
@@ -397,16 +381,17 @@ class AppForm(QtGui.QMainWindow):
         self.slicedata = np.sum(self.mf1.ycube[[slice1],:],axis = 0)
         self.img.set_array(self.slicedata)
         self.ax.set_title('Current Slice Wavelength:%0.0f '
-                          %float(self.mf1.xdata[slice1,0,0]))
+                          %float(self.mf1.xcube[slice1,0,0]))
         self.canvas.draw()     
       
 class InitialSettingsWindow(QtGui.QDialog):
     """Pop-up window confirming image dimensions"""
-    def __init__(self, dimension1, dimension2, parent=None):
+    def __init__(self, dimension1, dimension2, global_bool, parent=None):
         super(InitialSettingsWindow, self).__init__(parent)
         self.setWindowTitle('Initial Settings')
         self.dimension1 = dimension1
         self.dimension2 = dimension2
+        self.global_bool = global_bool
         self.inputs()
         
     def inputs(self):
@@ -418,7 +403,7 @@ class InitialSettingsWindow(QtGui.QDialog):
         self.dimension2Edit = QtGui.QLineEdit("%d"%self.dimension2)
 
         self.globalwavelength = QtGui.QCheckBox('Global Wavelength')
-        self.globalwavelength.setChecked(False)
+        self.globalwavelength.setChecked(self.global_bool)
         
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)

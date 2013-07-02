@@ -6,15 +6,18 @@ Created on Fri Jun 21 13:23:38 2013
 """
 import os
 import numpy as np
+import h5py
 
-class Mf1File:
+
+class Mf1File():
     """
     Reads the Mf1 File and builds a Data Cube from the intensities,
     xdata (wavelengths) for graph and optionally info for comments.
     """
     
-    def __init__(self, filename, dimension1, dimension2, global_bool):
+    def __init__(self, filename, hdf5_filename, dimension1, dimension2, global_bool):
         self.filename = filename
+        self.hdf5_filename = hdf5_filename
         self.dimension1 = dimension1
         self.dimension2 = dimension2
         self.global_bool = global_bool
@@ -24,15 +27,18 @@ class Mf1File:
         
         with open(self.filename,'rb') as fid:
             self.text_header=fid.read(2048)
-            self.read_into_graph(fid)
-        if not self.check_dimensions():
-            self.fix_dimensions()
+            #self.read_into_graph(fid)
+            self.read_into_cube(fid)
+        #if not self.check_dimensions():
+            #self.fix_dimensions()
 
-        self.xcube = self.build_xcube()
-        self.info = self.build_info()
-        self.ycube = self.build_ycube()        
-        self.maxval = self.find_maxval()
-     
+        self.build_xdata()
+        #self.info = self.build_info()
+        self.build_ycube()        
+        #self.maxval = self.find_maxval()
+        
+        self.data.close()
+        
     def datasize_finder(self):
         'finds the data size in the mf1 file'
         fileinfo=os.stat(self.filename)
@@ -83,31 +89,25 @@ class Mf1File:
         maxval = np.amax(self.ycube)
         return maxval
         
-    def build_xcube(self):
+    def build_xdata(self):
         """
         builds the wavelength data (x data for graph). 
         """
         if self.global_bool:
-            xarray = np.empty((self.dimension1*self.dimension2,1600))
-            for i in np.arange(self.dimension1*self.dimension2):
-                xarray[i] = self.xdata
+            self.xdata = self.xdata
         else:
-            xarray = self.graph_array[:,0:1600]
-        xarray = xarray.transpose()
-        xarray = xarray.reshape((1600,self.dimension1,self.dimension2))
-        return xarray
+            self.xdata = self.data.create_dataset('xdata',data=self.data["cube"][0,0,0:1600])
         
     def build_ycube(self):
         """
         builds a 3 dimensional array with intensity data
         """
+
         if self.global_bool:
-            ydata = self.graph_array[:,0:1600]
+            self.ycube = self.data.create_dataset('ycube', data=self.data["cube"][:,:,0:1600])
         else:
-            ydata = self.graph_array[:,1600:3200]
-        ydata = ydata.transpose()
-        ycube = ydata.reshape((1600,self.dimension1,self.dimension2))
-        return ycube
+            self.ycube = self.data.create_dataset('ycube', data=self.data["cube"][:,:,1600:3200])
+
         
     def build_info(self):
         """
@@ -120,4 +120,19 @@ class Mf1File:
             info = self.graph_array[:,3200:3264]
         info = info.transpose()
         return info
-  
+    def read_into_cube(self,fid):
+        
+        self.data = h5py.File(self.hdf5_filename,'w')
+        
+        if self.global_bool:
+            cube = self.data.create_dataset('cube',(self.dimension1,self.dimension2, 1664))
+            self.xdata = np.fromfile(file=fid, dtype='>f', count=1600)
+            for i in np.arange(self.dimension2):
+                for j in np.arange(self.dimension1):
+                    cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=1664)
+                    
+        else:
+            cube = self.data.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
+            for i in np.arange(self.dimension2):
+                for j in np.arange(self.dimension1):
+                    cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=3264)

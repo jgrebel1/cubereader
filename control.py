@@ -11,6 +11,8 @@ from PySide import QtCore
 from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
 
+#project specific items
+
 class ControlWindow(QtGui.QDialog):
         
     def __init__(self, current_tab, parent=None):
@@ -93,19 +95,11 @@ class ControlWindow(QtGui.QDialog):
         self.ev.clicked.connect(self.display_ev)
         self.wavelength.clicked.connect(self.display_wavelength)
     
-    def display_ev(self):     
-        self.current_tab = self.tab.currentWidget()
-        self.current_tab.display_ev = True
-        self.current_tab.change_display()
-        self.current_tab.update_single_slice(self.current_tab.imageval)
-        self.current_tab.canvas.draw()
-        
-    def display_wavelength(self):      
-        self.current_tab = self.tab.currentWidget()        
-        self.tab.currentWidget().display_ev = False
-        self.current_tab.change_display()
-        self.current_tab.update_single_slice(self.current_tab.imageval)
-        self.current_tab.canvas.draw()    
+    def display_ev(self):
+        self.current_tab.show_ev()
+    
+    def display_wavelength(self):
+        self.current_tab.show_wavelength()
     
     def update_label(self):
         if self.ev.isChecked():
@@ -135,7 +129,7 @@ class ControlWindow(QtGui.QDialog):
         """
         self.current_tab.xcoordinate = int(self.graphslicex.text())
         try:
-            self.current_tab.update_single_graph(self.current_tab.xcoordinate,
+            self.current_tab.update_graph(self.current_tab.xcoordinate,
                                                  self.current_tab.ycoordinate)
         except:
             print 'the x coordinate is out of range'
@@ -147,7 +141,7 @@ class ControlWindow(QtGui.QDialog):
         """
         self.current_tab.ycoordinate = int(self.graphslicey.text())
         try:
-            self.current_tab.update_single_graph(self.current_tab.xcoordinate,
+            self.current_tab.update_graph(self.current_tab.xcoordinate,
                                                  self.current_tab.ycoordinate)
         except:
             print 'the y coordinate is out of range'            

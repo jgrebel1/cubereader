@@ -113,10 +113,13 @@ class AppForm(QtGui.QMainWindow):
         """opens a file in a new tab"""
 
         filename, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
-        basename = analysis.get_file_basename(filename)
-        newtab = tab.Tab(filename)        
-        newtab.setWindowTitle('%s' %basename)
-        self.tab.addTab(newtab, '%s' %basename)
+        if filename != '':
+            basename = analysis.get_file_basename(filename)
+            newtab = tab.Tab(filename)        
+            newtab.setWindowTitle('%s' %basename)
+            self.tab.addTab(newtab, '%s' %basename)
+        else:
+            print 'No file selected'
         
     def open_initial_settings(self):
         """

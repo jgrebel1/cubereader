@@ -31,21 +31,19 @@ class Tab(QtGui.QWidget):
         self.cube = self.hdf5["cube"]
         self.ycube = self.hdf5["ycube"]
         self.xdata = self.hdf5["xdata"]
-        
+        self.make_frame()
+ 
+    
+    def make_frame(self):
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)            
-
         self.ax = self.fig.add_subplot(121)
-
-        
-
-        self.img = self.show_single_slice(self.ax, 1)
+        self.img = self.initialize_image(self.ax, 1)
         self.cbar = plt.colorbar(self.img)
         self.set_color_bar_settings()
-
         self.ax2 = self.fig.add_subplot(122)        
-        self.show_single_graph(self.ax2, 0, 0)
+        self.initialize_graph(self.ax2, 0, 0)
 
         # Create the navigation toolbar, tied to the canvas
         #
@@ -78,11 +76,57 @@ class Tab(QtGui.QWidget):
         #self.setCentralWidget(self.main_frame)
 
         #self.show_slices()
+
+    def connect_events(self):
+        """connect to all the events we need"""
+        self.cidpress = self.img.figure.canvas.mpl_connect(
+            'button_press_event', self.on_press_image)
+        self.connect(self.slider, QtCore.SIGNAL('valueChanged(int)'),
+                     self.update_image)
+        self.cidpick = self.canvas.mpl_connect('pick_event', self.on_pick_color)
+        self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
+                     self.export_graph)
+
+    def show_ev(self):     
+        self.display_ev = True
+        self.change_display()
+        self.update_image(self.imageval)
+        self.canvas.draw()
         
-    def addTab(self, widget):
-        if self.tab.indexOf(widget) == -1:
-            widget.setWindowFlags(QtCore.Qt.Widget)
-            self.tab.addTab(widget, widget.windowTitle())
+    def show_wavelength(self):      
+        self.display_ev = False
+        self.change_display()
+        self.update_image(self.imageval)
+        self.canvas.draw()    
+    
+    def export_graph(self):
+        filename, _ = QtGui.QFileDialog.getSaveFileName()
+        print 'saving graph at:', filename
+        export.export_graph(self.filename,self.xcoordinate, self.ycoordinate)
+        print 'Graph saved'   
+        
+    def on_press_image(self, event):
+        """
+        This changes the spec graph to theclicked xy coordinate and moves
+        the marker on the image.
+        
+        The .5 addition in the floor function is there to make xdata print 
+        correct coordinates.        
+        """
+    
+        if event.inaxes != self.img.axes: return
+    
+        contains, attrd = self.img.contains(event)
+        if not contains: return
+
+        print 'xcoordinate=%d, ycoordinate=%d'%(event.xdata + .5,
+                                                event.ydata + .5)
+        self.xcoordinate = np.floor(event.xdata + .5)
+        self.ycoordinate = np.floor(event.ydata + .5)
+        self.update_graph(self.xcoordinate, self.ycoordinate)
+        self.marker.set_xdata(self.xcoordinate)
+        self.marker.set_ydata(self.ycoordinate)
+        self.img.figure.canvas.draw()
     
     def change_display(self):
         self.ax2.cla()
@@ -100,21 +144,38 @@ class Tab(QtGui.QWidget):
                                       '.')       
             self.ax2.set_xlabel('$\lambda$ [nm]')
             
-    def connect_events(self):
-        """connect to all the events we need"""
-        self.cidpress = self.img.figure.canvas.mpl_connect(
-            'button_press_event', self.on_press_image)
-        self.connect(self.slider, QtCore.SIGNAL('valueChanged(int)'),
-                     self.update_single_slice)
-        self.cidpick = self.canvas.mpl_connect('pick_event', self.on_pick_color)
-        self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
-                     self.export_graph)
     
-    def export_graph(self):
-        filename, _ = QtGui.QFileDialog.getSaveFileName()
-        print 'saving graph at:', filename
-        export.export_graph(self.filename,self.xcoordinate, self.ycoordinate)
-        print 'Graph saved'        
+    
+        
+    def initialize_graph(self,ax2, xcoordinate, ycoordinate):
+        """
+        initializes the graph on screen
+        xcoordinates and ycoordinates start from 0        
+        """
+        self.display_ev = False
+        self.xcoordinate = xcoordinate
+        self.ycoordinate = ycoordinate
+        self.currentmaxvalcolor = self.maxval
+        self.currentminvalcolor = 0
+        self.img2, = ax2.plot(self.xdata,
+                                  self.ycube[ycoordinate,xcoordinate,:],'.')
+        plt.ylim(ymin=-self.maxval/10, ymax=self.maxval)
+        plt.xlabel('$\lambda$ [nm]')
+        return ax2        
+        
+    def initialize_image(self,ax, slice1):
+        'Initializes the image from the datacube'
+        self.imageval = 800
+        self.maxval = analysis.find_maxval(self.ycube[...])
+        self.slicedata = self.ycube[:,:,slice1]
+        self.img = ax.imshow(self.slicedata, interpolation='nearest',
+                              clim = (0,self.maxval))
+        self.marker, = ax.plot(0,0,'wo')
+        ax.set_title('Current Slice Wavelength:%0.0f '
+                           %float(self.xdata[slice1]))
+        plt.yticks([])
+        plt.xticks([])
+        return self.img    
         
     def on_pick_color(self, event):
         """
@@ -131,7 +192,7 @@ class Tab(QtGui.QWidget):
             self.currentminvalcolor = self.clicked_number
             self.img.set_clim(vmin=self.clicked_number)
             print 'new min is ', self.currentminvalcolor
-
+    
         elif self.val > .66:
             self.currentmaxvalcolor = self.clicked_number
             self.img.set_clim(vmax=self.clicked_number)
@@ -151,35 +212,12 @@ class Tab(QtGui.QWidget):
                 self.reset_colors()
         self.canvas.draw()      
         
-    def on_press_image(self, event):
-        """
-        This gets click data from graph.
-        The .5 addition in the floor function is there to make xdata print 
-        correct coordinates.
-        This also changes the spec graph to the clicked xy coordinate.
-        """
-
-        if event.inaxes != self.img.axes: return
-
-        contains, attrd = self.img.contains(event)
-        if not contains: return
-
-        #xcoordinates start at 0
-        #ycoordinates start at 0
-        print 'xcoordinate=%d, ycoordinate=%d'%(event.xdata + .5,
-                                                event.ydata + .5)
-        self.xcoordinate = np.floor(event.xdata + .5)
-        self.ycoordinate = np.floor(event.ydata + .5)
-        self.update_single_graph(self.xcoordinate, self.ycoordinate)
-        self.img.figure.canvas.draw()
+    
             
-
-
-        
     def reset_colors(self):
         self.img.set_clim(0, self.maxval)
         
-
+    
         
     def set_color_bar_settings(self):
         self.currentmaxvalcolor = self.maxval
@@ -217,50 +255,23 @@ class Tab(QtGui.QWidget):
             plt.yticks([])
             plt.xticks([])
             plt.clim(0,m)
-
+    
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.slices.canvas)
         self.slices.setLayout(vbox)
         
-
-
+    
+    
         self.slices.show()
         
-    def show_single_graph(self,ax2, xcoordinate, ycoordinate):
-        """
-        initializes the graph on screen
-        xcoordinates and ycoordinates start from 0        
-        """
-        self.display_ev = False
-        self.xcoordinate = xcoordinate
-        self.ycoordinate = ycoordinate
-        self.currentmaxvalcolor = self.maxval
-        self.currentminvalcolor = 0
-        self.img2, = ax2.plot(self.xdata,
-                                  self.ycube[ycoordinate,xcoordinate,:],'.')
-        plt.ylim(ymin=-self.maxval/10, ymax=self.maxval)
-        plt.xlabel('$\lambda$ [nm]')
-        return ax2        
-        
-    def show_single_slice(self,ax, slice1):
-        'Initializes the image from the datacube'
-        self.imageval = 800
-        self.maxval = analysis.find_maxval(self.ycube[...])
-        self.slicedata = self.ycube[:,:,slice1]
-        self.img = ax.imshow(self.slicedata, interpolation='nearest',
-                              clim = (0,self.maxval))
-        ax.set_title('Current Slice Wavelength:%0.0f '
-                           %float(self.xdata[slice1]))
-        plt.yticks([])
-        plt.xticks([])
-        return self.img
-
-    def update_single_graph(self, xcoordinate, ycoordinate):
+    
+    
+    def update_graph(self, xcoordinate, ycoordinate):
         """updates the graph on screen with the given x and y coordinates"""
         self.img2.set_ydata(self.ycube[ycoordinate, xcoordinate,:])
         self.canvas.draw()
-
-    def update_single_slice(self, slider_val):
+    
+    def update_image(self, slider_val):
         """updates the image on screen with a new cube slice from slider"""
         self.imageval = slider_val
         if self.display_ev:

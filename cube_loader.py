@@ -15,7 +15,8 @@ class Mf1File():
     xdata (wavelengths) for graph and optionally info for comments.
     """
     
-    def __init__(self, filename, hdf5_filename, dimension1, dimension2, global_bool):
+    def __init__(self, filename, hdf5_filename, dimension1, dimension2, 
+                 global_bool):
         self.filename = filename
         self.hdf5_filename = hdf5_filename
         self.dimension1 = dimension1
@@ -27,17 +28,16 @@ class Mf1File():
         
         with open(self.filename,'rb') as fid:
             self.text_header=fid.read(2048)
-            #self.read_into_graph(fid)
             self.read_into_cube(fid)
         #if not self.check_dimensions():
             #self.fix_dimensions()
 
         self.build_xdata()
         #self.info = self.build_info()
-        self.build_ycube()        
-        #self.maxval = self.find_maxval()
+        self.build_ycube()
         
         self.data.close()
+        self.write_header()        
         
     def datasize_finder(self):
         'finds the data size in the mf1 file'
@@ -49,20 +49,6 @@ class Mf1File():
         else:
             datasize = (fileinfo.st_size-2048)/(4*3200+256)
         return datasize
-
-    def read_into_graph(self,fid):
-        """
-        Reads the Binary data into an array. This does not work for large files.
-        """
-        if self.global_bool:
-            self.xdata = np.fromfile(file=fid, dtype='>f', count=1600)
-            self.graph_array = np.empty((self.dimension1*self.dimension2,1664))
-            for i in np.arange(self.dimension1*self.dimension2):
-                self.graph_array[i] = np.fromfile(file=fid, dtype='>f', count=1664)
-        else:
-            self.graph_array = np.empty((self.dimension1*self.dimension2,3264))
-            for i in np.arange(self.dimension1*self.dimension2):
-                self.graph_array[i] = np.fromfile(file=fid, dtype='>f', count=3264)
       
     def check_dimensions(self):
         'checks if we can make a cube from the data'
@@ -94,9 +80,10 @@ class Mf1File():
         builds the wavelength data (x data for graph). 
         """
         if self.global_bool:
-            self.xdata = self.xdata
+            self.xdata = self.data.create_dataset('xdata', data=self.xdata ) 
         else:
-            self.xdata = self.data.create_dataset('xdata',data=self.data["cube"][0,0,0:1600])
+            self.xdata = self.data.create_dataset('xdata',
+                                                  data=self.data["cube"][0,0,0:1600])
         
     def build_ycube(self):
         """
@@ -104,9 +91,11 @@ class Mf1File():
         """
 
         if self.global_bool:
-            self.ycube = self.data.create_dataset('ycube', data=self.data["cube"][:,:,0:1600])
+            self.ycube = self.data.create_dataset('ycube',
+                                                  data=self.data["cube"][:,:,0:1600])
         else:
-            self.ycube = self.data.create_dataset('ycube', data=self.data["cube"][:,:,1600:3200])
+            self.ycube = self.data.create_dataset('ycube', 
+                                                  data=self.data["cube"][:,:,1600:3200])
 
         
     def build_info(self):
@@ -120,19 +109,33 @@ class Mf1File():
             info = self.graph_array[:,3200:3264]
         info = info.transpose()
         return info
+        
     def read_into_cube(self,fid):
         
-        self.data = h5py.File(self.hdf5_filename,'w')
+        self.data = h5py.File(self.hdf5_filename,'w', userblock_size=2048)
         
         if self.global_bool:
-            cube = self.data.create_dataset('cube',(self.dimension1,self.dimension2, 1664))
+            cube = self.data.create_dataset('cube',
+                                            (self.dimension1,
+                                             self.dimension2, 1664))
+
             self.xdata = np.fromfile(file=fid, dtype='>f', count=1600)
-            for i in np.arange(self.dimension2):
-                for j in np.arange(self.dimension1):
+            
+            for i in np.arange(self.dimension1):
+                for j in np.arange(self.dimension2):
                     cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=1664)
-                    
         else:
             cube = self.data.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
-            for i in np.arange(self.dimension2):
-                for j in np.arange(self.dimension1):
+            for i in np.arange(self.dimension1):
+                for j in np.arange(self.dimension2):
                     cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=3264)
+    
+    def write_header(self):
+        """
+        HDF5 only supports writing the userblock after you close a file.
+        this writes in the header from the mf1 file to the new HDF5 file.
+        """
+        f = file(self.hdf5_filename, 'r+b')
+        f.seek(0,0)
+        f.write(self.text_header)
+        f.close()

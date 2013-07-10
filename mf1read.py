@@ -19,9 +19,11 @@ import h5py
 #project specific items
 
 
-from default import DefaultValues
+import default
 import cube_loader
 import analysis
+import export 
+
 
 class AppForm(QtGui.QMainWindow):
     """Gui Application to display Data Cube"""
@@ -46,13 +48,16 @@ class AppForm(QtGui.QMainWindow):
         
         print('Reading file: %s'%self.filename)
         print 'Pick a folder to save the hdf5 file'
-        self.hdf5_filename, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save File')
-
-        self.default_values = DefaultValues(self.filename)
+        self.hdf5_directory = QtGui.QFileDialog.getExistingDirectory(self,
+                                                                       'Choose a file Directory')
+        self.default_values = default.DefaultValues(self.filename)
+        filename, extension = os.path.splitext(self.filename)
+        basename = analysis.get_file_basename(self.filename)
+        hdf5_file = os.path.join(self.hdf5_directory, basename)
         
         self.open_initial_settings()
-        print('Saving file: %s'%self.hdf5_filename)        
-        cube_loader.Mf1File(self.filename,self.hdf5_filename,
+        print('Saving file: %s'%basename)        
+        cube_loader.Mf1File(self.filename,hdf5_file,
                             self.dimension1, self.dimension2,
                             self.globalwavelength)
         print 'Conversion Complete'
@@ -133,28 +138,28 @@ class AppForm(QtGui.QMainWindow):
         
     def open_control(self):
         self.control = ControlWindow()
-        self.control.c.mincolor_sig.connect(self.update_mincolor)
-        self.control.c.maxcolor_sig.connect(self.update_maxcolor)
-        self.control.c.imageslice_sig.connect(self.update_imageslice)
-        self.control.c.graphslicex_sig.connect(self.update_graphslicex)
-        self.control.c.graphslicey_sig.connect(self.update_graphslicey)
+        self.control.c.mincolor_sig.connect(self.update_mincolor_from_control)
+        self.control.c.maxcolor_sig.connect(self.update_maxcolor_from_control)
+        self.control.c.imageslice_sig.connect(self.update_imageslice_from_control)
+        self.control.c.graphslicex_sig.connect(self.update_graphslicex_from_control)
+        self.control.c.graphslicey_sig.connect(self.update_graphslicey_from_control)
         self.control.ev.clicked.connect(self.display_ev)
         self.control.wavelength.clicked.connect(self.display_wavelength)
         
     def display_ev(self):     
         self.current_tab = self.tab.currentWidget()
         self.current_tab.display_ev = True
-        self.current_tab.update_single_graph(self.current_tab.ycoordinate,
-                                             self.current_tab.xcoordinate)
-        self.current_tab.update_single_slice(self.current_tab.imagewavelength)
+        print self.current_tab.xcoordinate
+        self.current_tab.update_single_graph(self.current_tab.xcoordinate,
+                                             self.current_tab.ycoordinate)
+        self.current_tab.canvas.draw()
         
     def display_wavelength(self):      
         self.current_tab = self.tab.currentWidget()        
         self.tab.currentWidget().display_ev = False
-        self.current_tab.update_single_graph(self.current_tab.ycoordinate,
-                                             self.current_tab.xcoordinate)
-        self.current_tab.update_single_slice(self.current_tab.imagewavelength)
-        
+        self.current_tab.update_single_graph(self.current_tab.xcoordinate,
+                                             self.current_tab.ycoordinate)
+        self.current_tab.canvas.draw()
     def open_file(self):
         """opens a file in a new tab"""
 
@@ -185,7 +190,7 @@ class AppForm(QtGui.QMainWindow):
         if self.initialsettings.result():
             self.globalwavelength = self.initialsettings.globalwavelength.isChecked()
             
-    def update_graphslicex(self):
+    def update_graphslicex_from_control(self):
         """
         takes control panel input and changes the current tab's
         x coordinate for the displayed graph
@@ -198,7 +203,7 @@ class AppForm(QtGui.QMainWindow):
         except:
             print 'the x coordinate is out of range'
             
-    def update_graphslicey(self):
+    def update_graphslicey_from_control(self):
         """
         takes control panel input and changes the current tab's
         y coordinate for the displayed graph
@@ -211,24 +216,36 @@ class AppForm(QtGui.QMainWindow):
         except:
             print 'the y coordinate is out of range'            
 
-    def update_imageslice(self):
+    def update_imageslice_from_control(self):
         """
         updates the imageslice from the input from the control panel. 
         the image displayed is the image with the first integer value
         of the input
         """
         self.current_tab = self.tab.currentWidget()
-        self.current_tab.imagewavelength = int(self.control.imageslice.text())
-        try:
-            self.current_tab.imageval = np.where(np.rint((self.current_tab.xdata))==self.current_tab.imagewavelength)[0][0]
-            self.current_tab.slider.setValue(1599 - self.current_tab.imageval)
-            print 'The image wavelength is now', self.current_tab.imagewavelength
-        except:
-            print 'wavelength is out of range'
+        text_input = float(self.control.imageslice.text())
+        if self.current_tab.display_ev:
+            self.current_tab.imagewavelength = int(1240/text_input)
+            try:
+                self.current_tab.imageval = np.where(np.rint((self.current_tab.xdata))==self.current_tab.imagewavelength)[0][0]
+                self.current_tab.slider.setValue(self.current_tab.imageval)
+                print 'The image wavelength is now', self.current_tab.imagewavelength
+            except:
+                print 'wavelength is out of range'
+            
+        else:
+            self.current_tab.imagewavelength = int(text_input)
+            try:
+                self.current_tab.imageval = np.where(np.rint((self.current_tab.xdata))==self.current_tab.imagewavelength)[0][0]
+                self.current_tab.slider.setValue(1599 - self.current_tab.imageval)
+                print 'The image wavelength is now', self.current_tab.imagewavelength
+            except:
+                print 'wavelength is out of range'
 
 
 
-    def update_maxcolor(self):
+
+    def update_maxcolor_from_control(self):
         """
         takes control panel input and changes the current tab's
         max color for the displayed graph
@@ -238,7 +255,7 @@ class AppForm(QtGui.QMainWindow):
         self.current_tab.img.set_clim(vmax=self.current_tab.currentmaxval)
         print 'new max is', self.current_tab.currentmaxval
 
-    def update_mincolor(self):
+    def update_mincolor_from_control(self):
         """
         takes control panel input and changes the current tab's
         min color for the displayed graph
@@ -282,6 +299,13 @@ class Tab(QtGui.QWidget):
         left_spacer.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)      
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.set_slider_settings()
+        
+        self.export_graph_button = QtGui.QPushButton('Export Graph')
+        self.export_graph_button.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        
+        
+        
+        
         self.connect_events()
         
         hbox = QtGui.QHBoxLayout()
@@ -291,6 +315,7 @@ class Tab(QtGui.QWidget):
         hbox.addWidget(left_spacer)
         hbox.addWidget(self.slider)
         vbox.addLayout(hbox)
+        vbox.addWidget(self.export_graph_button)
 
         self.setLayout(vbox)
         #self.setCentralWidget(self.main_frame)
@@ -309,7 +334,15 @@ class Tab(QtGui.QWidget):
         self.connect(self.slider, QtCore.SIGNAL('valueChanged(int)'),
                      self.update_single_slice)
         self.cidpick = self.canvas.mpl_connect('pick_event', self.on_pick_color)
-   
+        self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
+                     self.export_graph)
+    
+    def export_graph(self):
+        filename, _ = QtGui.QFileDialog.getSaveFileName()
+        print 'saving graph at:', filename
+        export.export_graph(self.filename,self.xcoordinate, self.ycoordinate)
+        print 'Graph saved'        
+        
     def on_pick_color(self, event):
         """
         Clicking on the color bar will generate three different actions 
@@ -435,8 +468,6 @@ class Tab(QtGui.QWidget):
     def show_single_slice(self,ax, slice1):
         'shows a given slice from the datacube'
         self.maxval = analysis.find_maxval(self.ycube[...])
-        self.imagewavelength = 800
-        #self.slicedata = np.sum(ycube[[slice1],:],axis = 0)
         self.slicedata = self.ycube[:,:,slice1]
         self.img = ax.imshow(self.slicedata, interpolation='nearest',
                               clim = (0,self.maxval))
@@ -464,20 +495,20 @@ class Tab(QtGui.QWidget):
         self.canvas.draw()
 
     def update_single_slice(self, val):
-        """updates the image on screen with a new cube slice"""
+        """updates the image on screen with a new cube slice from slider"""
 
         if self.display_ev:
-            slice1 = val
-            self.slicedata = self.ycube[:,:,slice1]
+            self.slice1 = val
+            self.slicedata = self.ycube[:,:,self.slice1]
             self.img.set_array(self.slicedata)
             self.ax.set_title('Current Slice ev:%0.2f'
-                                %float(1240/self.xdata[slice1]))
+                                %float(1240/self.xdata[self.slice1]))
         else:
-            slice1 = 1600-val
-            self.slicedata = self.ycube[:,:,slice1]
+            self.slice1 = 1600-val
+            self.slicedata = self.ycube[:,:,self.slice1]
             self.img.set_array(self.slicedata)
             self.ax.set_title('Current Slice Wavelength:%0.0f '
-                              %float(self.xdata[slice1]))
+                              %float(self.xdata[self.slice1]))
         self.canvas.draw()     
 
 
@@ -610,26 +641,26 @@ class ControlWindow(QtGui.QDialog):
         
     def inputs(self):
 
-        imageslicelabel = QtGui.QLabel('Image Slice Wavelength:')
+        self.imageslicelabel= QtGui.QLabel('Image Slice Wavelength:')
         maxcolorlabel = QtGui.QLabel('Max Color Value:')
         mincolorlabel = QtGui.QLabel('Min Color Value:')        
         graphslicelabelx = QtGui.QLabel('Graph Slice X Coordinate:')
         graphslicelabely = QtGui.QLabel('Graph Slice Y Coordinate:')
         self.wavelength = QtGui.QRadioButton("wavelength", self)
         self.ev = QtGui.QRadioButton("ev", self)
-        
+
+        self.imageslice = QtGui.QLineEdit()   
         self.maxcolor = QtGui.QLineEdit()
         self.mincolor = QtGui.QLineEdit()
-        self.imageslice = QtGui.QLineEdit()
         self.graphslicex = QtGui.QLineEdit()
         self.graphslicey = QtGui.QLineEdit()
         
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
 
-        grid.addWidget(imageslicelabel,1,0)
+        grid.addWidget(self.imageslicelabel,1,0)
         grid.addWidget(self.imageslice,1,1)
-
+        
         grid.addWidget(maxcolorlabel,2,0)
         grid.addWidget(self.maxcolor,2,1)
         
@@ -667,7 +698,18 @@ class ControlWindow(QtGui.QDialog):
         self.show()
     
     def connect_events(self):
-                self.connect(self.update, QtCore.SIGNAL('clicked()'), self.update_values)
+                self.connect(self.update, QtCore.SIGNAL('clicked()'),
+                             self.update_values)
+                self.connect(self.ev, QtCore.SIGNAL('clicked()'),
+                             self.update_label)
+                self.connect(self.wavelength, QtCore.SIGNAL('clicked()'),
+                             self.update_label)
+    
+    def update_label(self):
+        if self.ev.isChecked():
+            self.imageslicelabel.setText('Image Slice ev:')
+        else:
+            self.imageslicelabel.setText('Image Slice wavelength:')
     
     def update_values(self):
         """Updates values in main window and clears textboxes"""
@@ -690,6 +732,7 @@ class Communicate(QtCore.QObject):
     maxcolor_sig = QtCore.Signal() 
     mincolor_sig = QtCore.Signal() 
     imageslice_sig = QtCore.Signal() 
+    imageslice_ev_sig = QtCore.Signal()
     graphslicex_sig = QtCore.Signal() 
     graphslicey_sig = QtCore.Signal()    
     

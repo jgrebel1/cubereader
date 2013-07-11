@@ -10,6 +10,7 @@ import matplotlib
 from PySide import QtCore
 from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
+from scipy import interpolate
 
 #project specific items
 
@@ -152,24 +153,28 @@ class ControlWindow(QtGui.QDialog):
         the image displayed is the image with the first integer value
         of the input
         """
-        text_input = float(self.imageslice.text())
         if self.current_tab.display_ev:
-            self.current_tab.imagewavelength = int(1240/text_input)
-            try:
-                self.current_tab.imageval = np.where(np.rint((self.current_tab.xdata))==self.current_tab.imagewavelength)[0][0]
-                self.current_tab.slider.setValue(self.current_tab.imageval)
-                print 'The image wavelength is now', self.current_tab.imagewavelength
-            except:
-                print 'wavelength is out of range'
-            
+            text_input = 1240/float(self.imageslice.text())
+            xdata = np.array(self.current_tab.xdata[...])
+            f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
+            for number in np.arange(1600):
+                if number > f(float(text_input)):
+                    self.current_tab.imagewavelength = xdata[1600-number]
+                    self.current_tab.imageval = 1600-number
+                    break            
+            self.current_tab.slider.setValue(self.current_tab.imageval)  
+            print 'The image ev is now :%0.2f'%float(1240/self.current_tab.imagewavelength)            
         else:
-            self.current_tab.imagewavelength = int(text_input)
-            try:
-                self.current_tab.imageval = np.where(np.rint((self.current_tab.xdata))==self.current_tab.imagewavelength)[0][0]
-                self.current_tab.slider.setValue(1599 - self.current_tab.imageval)
-                print 'The image wavelength is now', self.current_tab.imagewavelength
-            except:
-                print 'wavelength is out of range'
+            text_input = float(self.imageslice.text())            
+            xdata = np.array(self.current_tab.xdata[...])
+            f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
+            for number in np.arange(1600):
+                if number > f(float(text_input)):
+                    self.current_tab.imagewavelength = xdata[1600-number]
+                    self.current_tab.imageval = number
+                    break            
+            self.current_tab.slider.setValue(self.current_tab.imageval) 
+            print 'The image wavelength is now %0.0f'%self.current_tab.imagewavelength
 
     def update_maxcolor_from_control(self):
         """

@@ -97,10 +97,10 @@ class ControlWindow(QtGui.QDialog):
         self.wavelength.clicked.connect(self.display_wavelength)
     
     def display_ev(self):
-        self.current_tab.show_ev()
+        self.current_tab().show_ev()
     
     def display_wavelength(self):
-        self.current_tab.show_wavelength()
+        self.current_tab().show_wavelength()
     
     def update_label(self):
         if self.ev.isChecked():
@@ -128,24 +128,29 @@ class ControlWindow(QtGui.QDialog):
         takes control panel input and changes the current tab's
         x coordinate for the displayed graph
         """
-        self.current_tab.xcoordinate = int(self.graphslicex.text())
-        try:
-            self.current_tab.update_graph(self.current_tab.xcoordinate,
-                                                 self.current_tab.ycoordinate)
-        except:
-            print 'the x coordinate is out of range'
+        print "the current tab is:", self.current_tab()
+        self.current_tab().xcoordinate = int(self.graphslicex.text())
+        self.current_tab().marker.set_xdata(self.current_tab().xcoordinate)    
+        #try:
+        self.current_tab().update_graph(self.current_tab().xcoordinate,
+                                                 self.current_tab().ycoordinate)
+        #except:
+            #print 'the x coordinate is out of range'
+
             
     def update_graphslicey_from_control(self):
         """
         takes control panel input and changes the current tab's
         y coordinate for the displayed graph
         """
-        self.current_tab.ycoordinate = int(self.graphslicey.text())
-        try:
-            self.current_tab.update_graph(self.current_tab.xcoordinate,
-                                                 self.current_tab.ycoordinate)
-        except:
-            print 'the y coordinate is out of range'            
+        self.current_tab().ycoordinate = int(self.graphslicey.text())
+        self.current_tab().marker.set_ydata(self.current_tab().ycoordinate)        
+        #try:
+        self.current_tab().update_graph(self.current_tab().xcoordinate,
+                                                 self.current_tab().ycoordinate)
+        #except:
+            #print 'the y coordinate is out of range'            
+
 
     def update_imageslice_from_control(self):
         """
@@ -153,48 +158,62 @@ class ControlWindow(QtGui.QDialog):
         the image displayed is the image with the first integer value
         of the input
         """
-        if self.current_tab.display_ev:
+        if self.current_tab().display_ev:
             text_input = 1240/float(self.imageslice.text())
-            xdata = np.array(self.current_tab.xdata[...])
+            xdata = np.array(self.current_tab().xdata[...])
             f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
-            for number in np.arange(1600):
-                if number > f(float(text_input)):
-                    self.current_tab.imagewavelength = xdata[1600-number]
-                    self.current_tab.imageval = 1600-number
-                    break            
-            self.current_tab.slider.setValue(self.current_tab.imageval)  
-            print 'The image ev is now :%0.2f'%float(1240/self.current_tab.imagewavelength)            
+            if text_input > xdata[0]:
+                self.current_tab().imagewavelength = xdata[0]
+                self.current_tab().imageval = 1599
+            elif text_input < xdata[-1]:
+                self.current_tab().imagewavelength = xdata[1599]
+                self.current_tab().imageval = 0
+            else:   
+                for number in np.arange(1600):
+                    if number > f(text_input):
+                        self.current_tab().imagewavelength = xdata[1600-number]
+                        self.current_tab().imageval = 1599-number
+                        break            
+            self.current_tab().slider.setValue(self.current_tab().imageval)  
+            print 'The image ev is now :%0.2f'%float(1240/self.current_tab().imagewavelength)            
         else:
             text_input = float(self.imageslice.text())            
-            xdata = np.array(self.current_tab.xdata[...])
+            xdata = np.array(self.current_tab().xdata[...])
             f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
-            for number in np.arange(1600):
-                if number > f(float(text_input)):
-                    self.current_tab.imagewavelength = xdata[1600-number]
-                    self.current_tab.imageval = number
-                    break            
-            self.current_tab.slider.setValue(self.current_tab.imageval) 
-            print 'The image wavelength is now %0.0f'%self.current_tab.imagewavelength
+            if text_input > xdata[0]:
+                self.current_tab().imagewavelength = xdata[0]
+                self.current_tab().imageval = 1599
+            elif text_input < xdata[-1]:
+                self.current_tab().imagewavelength = xdata[1599]
+                self.current_tab().imageval = 0
+            else:
+                for number in np.arange(1600):
+                    if number > f(text_input):
+                        self.current_tab().imagewavelength = xdata[1600-number]
+                        self.current_tab().imageval = number
+                        break            
+            self.current_tab().slider.setValue(self.current_tab().imageval) 
+            print 'The image wavelength is now %0.0f'%self.current_tab().imagewavelength
 
     def update_maxcolor_from_control(self):
         """
         takes control panel input and changes the current tab's
         max color for the displayed graph
         """
-        self.current_tab.currentmaxvalcolor = int(self.maxcolor.text())
-        self.current_tab.img.set_clim(vmax=self.current_tab.currentmaxvalcolor)
-        print 'new max is', self.current_tab.currentmaxvalcolor
-        self.current_tab.canvas.draw()
+        self.current_tab().currentmaxvalcolor = int(self.maxcolor.text())
+        self.current_tab().img.set_clim(vmax=self.current_tab().currentmaxvalcolor)
+        print 'new max is', self.current_tab().currentmaxvalcolor
+        self.current_tab().canvas.draw()
 
     def update_mincolor_from_control(self):
         """
         takes control panel input and changes the current tab's
         min color for the displayed graph
         """        
-        self.current_tab.currentminvalcolor = int(self.mincolor.text())
-        self.current_tab.img.set_clim(vmin=self.current_tab.currentminvalcolor)
-        print 'new min is', self.current_tab.currentminvalcolor          
-        self.current_tab.canvas.draw()
+        self.current_tab().currentminvalcolor = int(self.mincolor.text())
+        self.current_tab().img.set_clim(vmin=self.current_tab().currentminvalcolor)
+        print 'new min is', self.current_tab().currentminvalcolor          
+        self.current_tab().canvas.draw()
               
           
 class Communicate(QtCore.QObject):

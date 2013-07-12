@@ -31,7 +31,7 @@ class Mf1File():
             self.read_into_cube(fid)
         #if not self.check_dimensions():
             #self.fix_dimensions()
-
+        
         self.build_xdata()
         #self.info = self.build_info()
         self.build_ycube()
@@ -48,6 +48,7 @@ class Mf1File():
             datasize = (fileinfo.st_size-2048-4*1600)/(4*3200+256)
         else:
             datasize = (fileinfo.st_size-2048)/(4*3200+256)
+
         return datasize
       
     def check_dimensions(self):
@@ -123,13 +124,18 @@ class Mf1File():
             
             for i in np.arange(self.dimension1):
                 for j in np.arange(self.dimension2):
-                    cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=1664)
+                    try:
+                        cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=1664)
+                    except:
+                        return
         else:
             cube = self.data.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
             for i in np.arange(self.dimension1):
                 for j in np.arange(self.dimension2):
-                    cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=3264)
-    
+                    try:
+                        cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=3264)
+                    except:
+                        return
     def write_header(self):
         """
         HDF5 only supports writing the userblock after you close a file.

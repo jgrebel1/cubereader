@@ -2,7 +2,7 @@
 @authors: Joel Grebel and Aaron Hammack
 
 used Eli Bendersky's (eliben@gmail.com) embeding matplotlib into pyqt 
-Gui Demo for much of the structure.
+Gui Demo for some of the structure.
 """
 
 import os
@@ -105,7 +105,7 @@ class AppForm(QtGui.QMainWindow):
         
         
     def open_control(self):
-        self.control = control.ControlWindow(self.tab.currentWidget())
+        self.control = control.ControlWindow(self.tab.currentWidget)
 
         
 

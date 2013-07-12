@@ -31,6 +31,7 @@ class Tab(QtGui.QWidget):
         self.cube = self.hdf5["cube"]
         self.ycube = self.hdf5["ycube"]
         self.xdata = self.hdf5["xdata"]
+        self.press = False
         self.make_frame()
  
     
@@ -77,57 +78,6 @@ class Tab(QtGui.QWidget):
 
         #self.show_slices()
 
-    def connect_events(self):
-        """connect to all the events we need"""
-        self.cidpress = self.img.figure.canvas.mpl_connect(
-            'button_press_event', self.on_press_image)
-        self.connect(self.slider, QtCore.SIGNAL('valueChanged(int)'),
-                     self.update_image)
-        self.cidpick = self.canvas.mpl_connect('pick_event', self.on_pick_color)
-        self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
-                     self.export_graph)
-
-    def show_ev(self):     
-        self.display_ev = True
-        self.change_display()
-        self.update_image(self.imageval)
-        self.canvas.draw()
-        
-    def show_wavelength(self):      
-        self.display_ev = False
-        self.change_display()
-        self.update_image(self.imageval)
-        self.canvas.draw()    
-    
-    def export_graph(self):
-        filename, _ = QtGui.QFileDialog.getSaveFileName()
-        print 'saving graph at:', filename
-        export.export_graph(self.filename,self.xcoordinate, self.ycoordinate)
-        print 'Graph saved'   
-        
-    def on_press_image(self, event):
-        """
-        This changes the spec graph to theclicked xy coordinate and moves
-        the marker on the image.
-        
-        The .5 addition in the floor function is there to make xdata print 
-        correct coordinates.        
-        """
-    
-        if event.inaxes != self.img.axes: return
-    
-        contains, attrd = self.img.contains(event)
-        if not contains: return
-
-        print 'xcoordinate=%d, ycoordinate=%d'%(event.xdata + .5,
-                                                event.ydata + .5)
-        self.xcoordinate = np.floor(event.xdata + .5)
-        self.ycoordinate = np.floor(event.ydata + .5)
-        self.update_graph(self.xcoordinate, self.ycoordinate)
-        self.marker.set_xdata(self.xcoordinate)
-        self.marker.set_ydata(self.ycoordinate)
-        self.img.figure.canvas.draw()
-    
     def change_display(self):
         self.ax2.cla()
         if self.display_ev:
@@ -138,15 +88,37 @@ class Tab(QtGui.QWidget):
             self.ax2.set_xlabel('ev')
             
         else:
-            self.img2, = self.ax2.plot(self.xdata,
+            self.img2, = self.ax2.plot(self.xdata[...],
                                       self.ycube[self.ycoordinate,
                                                  self.xcoordinate,:],
                                       '.')       
             self.ax2.set_xlabel('$\lambda$ [nm]')
             
-    
-    
+    def connect_events(self):
+        """connect to all the events we need"""
+        self.cidpress = self.img.figure.canvas.mpl_connect(
+            'button_press_event', self.on_press_image)
+        self.cidpress2 = self.img.figure.canvas.mpl_connect(
+            'motion_notify_event', self.on_motion)
+        self.cidpress3 = self.img.figure.canvas.mpl_connect(
+            'button_release_event', self.on_release)
+        self.connect(self.slider, QtCore.SIGNAL('valueChanged(int)'),
+                     self.update_image)
+        self.cidpick = self.canvas.mpl_connect('pick_event', self.on_pick_color)
+        self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
+                     self.export_graph)
+                     
+    def export_graph(self):
+        folder, _ = QtGui.QFileDialog.getExistingDirectory()
+        filename = os.path.join(folder,)
+        print 'saving graph at:', folder
+        export.export_graph(self.filename,filename, self.xcoordinate, self.ycoordinate)
+        print 'Graph saved'  
         
+
+            
+
+                   
     def initialize_graph(self,ax2, xcoordinate, ycoordinate):
         """
         initializes the graph on screen
@@ -157,7 +129,7 @@ class Tab(QtGui.QWidget):
         self.ycoordinate = ycoordinate
         self.currentmaxvalcolor = self.maxval
         self.currentminvalcolor = 0
-        self.img2, = ax2.plot(self.xdata,
+        self.img2, = ax2.plot(self.xdata[...],
                                   self.ycube[ycoordinate,xcoordinate,:],'.')
         plt.ylim(ymin=-self.maxval/10, ymax=self.maxval)
         plt.xlabel('$\lambda$ [nm]')
@@ -176,6 +148,20 @@ class Tab(QtGui.QWidget):
         plt.yticks([])
         plt.xticks([])
         return self.img    
+        
+    def on_motion(self, event):        
+        """
+        dragging the marker will change the graph.
+        """
+        if self.press is False: return
+        if event.inaxes != self.img.axes: return  
+        
+        self.xcoordinate = np.floor(event.xdata + .5)
+        self.ycoordinate = np.floor(event.ydata + .5)
+        self.update_graph(self.xcoordinate, self.ycoordinate)
+        self.marker.set_xdata(self.xcoordinate)
+        self.marker.set_ydata(self.ycoordinate)
+        self.img.figure.canvas.draw()
         
     def on_pick_color(self, event):
         """
@@ -212,13 +198,42 @@ class Tab(QtGui.QWidget):
                 self.reset_colors()
         self.canvas.draw()      
         
-    
+    def on_press_image(self, event):
+        """
+        This changes the spec graph to theclicked xy coordinate and moves
+        the marker on the image.
+        
+        The .5 addition in the floor function is there to make xdata print 
+        correct coordinates.        
+        """
+        
+        if event.inaxes != self.img.axes: return    
+        contains, attrd = self.img.contains(event)
+        
+        if not contains: return
+
+        print 'xcoordinate=%d, ycoordinate=%d'%(event.xdata + .5,
+                                                event.ydata + .5)
+        self.xcoordinate = np.floor(event.xdata + .5)
+        self.ycoordinate = np.floor(event.ydata + .5)
+        self.update_graph(self.xcoordinate, self.ycoordinate)
+        self.marker.set_xdata(self.xcoordinate)
+        self.marker.set_ydata(self.ycoordinate)
+        self.press = True        
+        self.img.figure.canvas.draw()
+
+
+    def on_release(self, event):
+        'on release we reset the press data'
+        self.press = False
             
     def reset_colors(self):
         self.img.set_clim(0, self.maxval)
-        
-    
-        
+        self.currentmaxvalcolor = self.maxval
+        print 'new max is', self.currentmaxvalcolor
+        self.currentminvalcolor = 0
+        print 'new min is', self.currentminvalcolor               
+                
     def set_color_bar_settings(self):
         self.currentmaxvalcolor = self.maxval
         self.currentminvalcolor = 0
@@ -228,6 +243,14 @@ class Tab(QtGui.QWidget):
         self.slider.setRange(1, 1600)
         self.slider.setValue(800)
         self.slider.setTracking(True)
+        
+    def show_ev(self):     
+        self.display_ev = True
+        self.change_display()
+        self.update_image(self.imageval)
+        self.canvas.draw()
+        
+   
         
     def show_slices(self,N=100,axis=0):
         """
@@ -264,7 +287,11 @@ class Tab(QtGui.QWidget):
     
         self.slices.show()
         
-    
+    def show_wavelength(self):      
+        self.display_ev = False
+        self.change_display()
+        self.update_image(self.imageval)
+        self.canvas.draw()        
     
     def update_graph(self, xcoordinate, ycoordinate):
         """updates the graph on screen with the given x and y coordinates"""

@@ -28,6 +28,7 @@ class Mf1File():
         
         with open(self.filename,'rb') as fid:
             self.text_header=fid.read(2048)
+            self.data = h5py.File(self.hdf5_filename,'w', userblock_size=2048)
             self.read_into_cube(fid)
         #if not self.check_dimensions():
             #self.fix_dimensions()
@@ -113,7 +114,7 @@ class Mf1File():
         
     def read_into_cube(self,fid):
         
-        self.data = h5py.File(self.hdf5_filename,'w', userblock_size=2048)
+
         
         if self.global_bool:
             cube = self.data.create_dataset('cube',

@@ -22,23 +22,27 @@ import export
 import color
 import data_view
 import plot_tools
-
+#from mayavi import mlab
             
 class Tab(QtGui.QWidget):
 
     def __init__(self,filename, parent=None):
         super(Tab, self).__init__(parent)      
         self.filename = filename
+        print self.filename
         self.hdf5 = h5py.File(self.filename,'r')    
         self.cube = self.hdf5["cube"]
         self.ycube = self.hdf5["ycube"]
         self.xdata = self.hdf5["xdata"]
         self.maxval = analysis.find_maxval(self.ycube[...])
         self.press = False
+        #mlab.contour3d(self.ycube[...])
+        #mlab.show()
         self.make_frame()
  
     
     def make_frame(self):
+        self.data_view = data_view.DataView(maxval=self.maxval)
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)            
@@ -83,7 +87,7 @@ class Tab(QtGui.QWidget):
         vbox.addWidget(self.export_graph_button)
 
         self.setLayout(vbox)
-        self.data_view = data_view.DataView(maxval=self.maxval)
+
 
 
     def change_display(self):
@@ -145,30 +149,30 @@ class Tab(QtGui.QWidget):
         window asking for custom values.
         """
         self.val = event.mouseevent.ydata
-        self.clicked_number = (self.val*(self.currentmaxvalcolor
-                                         -self.currentminvalcolor)
-                               +self.currentminvalcolor)
+        clicked_number = (self.val*(self.data_view.currentmaxvalcolor
+                                         -self.data_view.currentminvalcolor)
+                               +self.data_view.currentminvalcolor)
         
         if self.val < .33:
-            self.currentminvalcolor = self.clicked_number
-            self.img.set_clim(vmin=self.clicked_number)
-            print 'new min is ', self.currentminvalcolor
+            self.data_view.currentminvalcolor = clicked_number
+            self.img.set_clim(vmin=clicked_number)
+            print 'new min is ', self.data_view.currentminvalcolor
     
         elif self.val > .66:
-            self.currentmaxvalcolor = self.clicked_number
-            self.img.set_clim(vmax=self.clicked_number)
-            print 'new max is ', self.currentmaxvalcolor
+            self.data_view.currentmaxvalcolor = clicked_number
+            self.img.set_clim(vmax=clicked_number)
+            print 'new max is ', self.data_view.currentmaxvalcolor
         else:
             self.colorwindow = color.ColorWindow()
             self.colorwindow.exec_()
             if self.colorwindow.result() and self.colorwindow.maxcolor.text()!='':
-                self.currentmaxvalcolor = int(self.colorwindow.maxcolor.text())
-                self.img.set_clim(vmax=self.currentmaxvalcolor)
-                print 'new max is', self.currentmaxvalcolor
+                self.data_view.currentmaxvalcolor = int(self.colorwindow.maxcolor.text())
+                self.img.set_clim(vmax=self.data_view.currentmaxvalcolor)
+                print 'new max is', self.data_view.currentmaxvalcolor
             if self.colorwindow.result() and self.colorwindow.mincolor.text()!='':
-                self.currentminvalcolor = int(self.colorwindow.mincolor.text())
-                self.img.set_clim(vmin=self.currentminvalcolor)
-                print 'new min is', self.currentminvalcolor
+                self.data_view.currentminvalcolor = int(self.data_view.colorwindow.mincolor.text())
+                self.img.set_clim(vmin=self.data_view.currentminvalcolor)
+                print 'new min is', self.data_view.currentminvalcolor
             if self.colorwindow.resetvalue:
                 self.reset_colors()
         self.canvas.draw()      
@@ -204,13 +208,13 @@ class Tab(QtGui.QWidget):
     def reset_colors(self):
         self.img.set_clim(0, self.maxval)
         self.data_view.currentmaxvalcolor = self.maxval
-        print 'new max is', self.currentmaxvalcolor
+        print 'new max is', self.data_view.currentmaxvalcolor
         self.data_view.currentminvalcolor = 0
-        print 'new min is', self.currentminvalcolor               
+        print 'new min is', self.data_view.currentminvalcolor               
                 
     def set_color_bar_settings(self):
-        self.currentmaxvalcolor = self.maxval
-        self.currentminvalcolor = 0
+        self.data_view.currentmaxvalcolor = self.maxval
+        self.data_view.currentminvalcolor = 0
         self.cbar.ax.set_picker(5) 
         
     def set_slider_settings(self):

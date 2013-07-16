@@ -16,21 +16,27 @@ import analysis
 import init_settings
 
 def convert_mf1():
-    filename, _ = QtGui.QFileDialog.getOpenFileName('Open file')
+    filename, _ = QtGui.QFileDialog.getOpenFileName()
     
     print('Reading file: %s'%filename)
     print 'Pick a folder to save the hdf5 file'
-    hdf5_directory = QtGui.QFileDialog.getExistingDirectory('Choose a file Directory')
+    hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
     default_values = default.DefaultValues(filename)
-    filename, extension = os.path.splitext(filename)
+    #filename, extension = os.path.splitext(filename)
     basename = analysis.get_file_basename(filename)
     hdf5_file = os.path.join(hdf5_directory, basename)
+    
     
     dimension1, dimension2, global_bool = get_initial_settings(default_values)
     print('Saving file: %s'%basename)        
     cube_loader.Mf1File(filename,hdf5_file,
                         dimension1, dimension2,
                         global_bool)
+                        
+    #rename with hdf5 extension
+    #full_hdf5_file = os.path.join(hdf5_file,'.hdf5')
+    #os.rename(hdf5_file, full_hdf5_file)
+    
     print 'Conversion Complete'
     
 def get_initial_settings(default_values):
@@ -51,6 +57,7 @@ def get_initial_settings(default_values):
         print 'Dimension 2 is now ', initialsettings.dimension2Edit.text()
         dimension2 = int(initialsettings.dimension2Edit.text())
     if initialsettings.result():
-        global_bool = initialsettings.global_bool.isChecked()
-    return (dimension1, dimension1, global_bool)
+        global_bool = initialsettings.globalwavelength.isChecked()
+        print 'global_bool is', global_bool
+    return (dimension1, dimension2, global_bool)
         

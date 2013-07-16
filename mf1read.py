@@ -6,6 +6,7 @@ Gui Demo for some of the structure.
 """
 
 import os
+import sys
 import matplotlib
 from PySide import QtCore
 from PySide import QtGui
@@ -83,24 +84,30 @@ class AppForm(QtGui.QMainWindow):
         
         
     def open_control(self):
+        """
+        opens control panel. The control panel always affects the currently
+        selected tab.
+        """
         self.control = control_relay.ControlRelay(self.tab)
         self.tab.currentChanged.connect(self.control_panel_update)
     
 
     def open_file(self):
         """opens a file in a new tab"""
-
-        filename, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
-        if filename != '':
-            basename = analysis.get_file_basename(filename)            
-            with open(filename,'rb') as f:
-                QtGui.QMessageBox.information(self,basename, f.read(2048).strip())  
-
-            newtab = tab.Tab(filename)        
-            newtab.setWindowTitle('%s' %basename)
-            self.tab.addTab(newtab, '%s' %basename)
-        else:
-            print 'No file selected'
+        dialog = QtGui.QFileDialog(self)
+        dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
+        #dialog.setNameFilter('HDF5 (*.hdf5)')
+        if dialog.exec_():
+            filenames = dialog.selectedFiles()
+        for filename in filenames:
+            if filename:
+                basename = analysis.get_file_basename(filename)            
+                with open(filename,'rb') as f:
+                    QtGui.QMessageBox.information(self,basename, f.read(2048).strip())  
+    
+                newtab = tab.Tab(filename)        
+                newtab.setWindowTitle('%s' %basename)
+                self.tab.addTab(newtab, '%s' %basename)
         
 
 def main():

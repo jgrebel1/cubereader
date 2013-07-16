@@ -6,6 +6,7 @@ Created on Fri Jul 12 19:44:34 2013
 """
 import matplotlib
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def initialize_graph(axes, ycube, xdata, maxval):
@@ -22,6 +23,7 @@ def initialize_image(axes, ycube, xdata, slice1, maxval):
     'Initializes the image from the datacube'
    
     slicedata = ycube[:,:,slice1]
+    print 'the shape of the image is', np.shape(slicedata)
     img = axes.imshow(slicedata, interpolation='nearest',
                           clim = (0,maxval))
 

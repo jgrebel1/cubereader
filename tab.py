@@ -23,6 +23,8 @@ import color
 import data_view
 import plot_tools
 #from mayavi import mlab
+
+plt.ioff()
             
 class Tab(QtGui.QWidget):
 
@@ -42,6 +44,7 @@ class Tab(QtGui.QWidget):
  
     
     def make_frame(self):
+        
         self.data_view = data_view.DataView(maxval=self.maxval)
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
@@ -87,7 +90,7 @@ class Tab(QtGui.QWidget):
         vbox.addWidget(self.export_graph_button)
 
         self.setLayout(vbox)
-
+        
 
 
     def change_display(self):
@@ -170,7 +173,7 @@ class Tab(QtGui.QWidget):
                 self.img.set_clim(vmax=self.data_view.currentmaxvalcolor)
                 print 'new max is', self.data_view.currentmaxvalcolor
             if self.colorwindow.result() and self.colorwindow.mincolor.text()!='':
-                self.data_view.currentminvalcolor = int(self.data_view.colorwindow.mincolor.text())
+                self.data_view.currentminvalcolor = int(self.colorwindow.mincolor.text())
                 self.img.set_clim(vmin=self.data_view.currentminvalcolor)
                 print 'new min is', self.data_view.currentminvalcolor
             if self.colorwindow.resetvalue:

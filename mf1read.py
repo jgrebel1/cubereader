@@ -21,6 +21,7 @@ import tab
 import control_relay
 import menu_tools
 import convert_file
+import header
 
 
 class AppForm(QtGui.QMainWindow):
@@ -32,15 +33,20 @@ class AppForm(QtGui.QMainWindow):
         self.create_menu()
         self.create_main_window()
         #self.create_status_bar()
+         
+    def close_tab(self):
+        if self.tab.currentWidget().hdf5:
+            self.tab.currentWidget().hdf5.close()
+        self.tab.removeTab(self.tab.currentIndex())             
         
     def control_panel_update(self):
         self.control.update_current()
-        
+    
     def create_main_window(self):
         self.main_window = QtGui.QWidget()
         self.tab = QtGui.QTabWidget()
         self.tab.setTabsClosable(True)
-        self.tab.tabCloseRequested.connect(self.tab.removeTab)
+        self.tab.tabCloseRequested.connect(self.close_tab)
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.tab)
 
@@ -102,14 +108,16 @@ class AppForm(QtGui.QMainWindow):
         for filename in filenames:
             if filename:
                 basename = analysis.get_file_basename(filename)            
-                with open(filename,'rb') as f:
-                    QtGui.QMessageBox.information(self,basename, f.read(2048).strip())  
-    
-                newtab = tab.Tab(filename)        
+                with open(filename,'rb') as f: 
+                    #generates a new variable for each file to hold the header window.
+                    #I need to find a better way to do this
+                    #exec("self.%s = header.HeaderWindow(basename, f.read(2048))"%(basename+'_header'))
+                    self.header_window = header.HeaderWindow(basename, f.read(2048))
+                newtab = tab.Tab(filename)         
                 newtab.setWindowTitle('%s' %basename)
                 self.tab.addTab(newtab, '%s' %basename)
-        
-
+            else:
+                print 'No file selected'
 def main():
     app = QtGui.QApplication(os.sys.argv)
     form = AppForm()

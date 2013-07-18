@@ -16,28 +16,36 @@ import analysis
 import init_settings
 
 def convert_mf1():
-    filename, _ = QtGui.QFileDialog.getOpenFileName()
     
-    print('Reading file: %s'%filename)
-    print 'Pick a folder to save the hdf5 file'
-    hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
-    default_values = default.DefaultValues(filename)
-    #filename, extension = os.path.splitext(filename)
-    basename = analysis.get_file_basename(filename)
-    hdf5_file = os.path.join(hdf5_directory, basename)
-    
-    
-    dimension1, dimension2, global_bool = get_initial_settings(default_values)
-    print('Saving file: %s'%basename)        
-    cube_loader.Mf1File(filename,hdf5_file,
-                        dimension1, dimension2,
-                        global_bool)
-                        
-    #rename with hdf5 extension
-    #full_hdf5_file = os.path.join(hdf5_file,'.hdf5')
-    #os.rename(hdf5_file, full_hdf5_file)
-    
-    print 'Conversion Complete'
+    dialog = QtGui.QFileDialog()
+    dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
+    dialog.setNameFilter('MF1 (*.mf1)')
+    if dialog.exec_():
+        filenames = dialog.selectedFiles()
+    for filename in filenames:
+        if filename:    
+            print('Reading file: %s'%filename)
+            print 'Pick a folder to save the hdf5 file'
+            hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
+            default_values = default.DefaultValues(filename)
+            #filename, extension = os.path.splitext(filename)
+            basename = analysis.get_file_basename(filename)
+            hdf5_file = os.path.join(hdf5_directory, basename)
+            
+            
+            dimension1, dimension2, global_bool = get_initial_settings(default_values)
+            print('Saving file: %s'%basename)        
+            cube_loader.Mf1File(filename,hdf5_file,
+                                dimension1, dimension2,
+                                global_bool)
+                                
+            #rename with hdf5 extension
+            #full_hdf5_file = os.path.join(hdf5_file,'.hdf5')
+            #os.rename(hdf5_file, full_hdf5_file)
+            
+            print 'Conversion Complete'
+        else:
+            print 'No file selected'
     
 def get_initial_settings(default_values):
     """

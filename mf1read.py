@@ -11,6 +11,7 @@ import matplotlib
 from PySide import QtCore
 from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
+import wraith.wraith
 
 #project specific items
 

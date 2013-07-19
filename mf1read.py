@@ -12,7 +12,6 @@ from PySide import QtCore
 from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
 import wraith.wraith
-
 #project specific items
 
 
@@ -103,7 +102,7 @@ class AppForm(QtGui.QMainWindow):
         """opens a file in a new tab"""
         dialog = QtGui.QFileDialog(self)
         dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
-        #dialog.setNameFilter('HDF5 (*.hdf5)')
+        dialog.setNameFilter('HDF5 (*.hdf5)')
         if dialog.exec_():
             filenames = dialog.selectedFiles()
         for filename in filenames:

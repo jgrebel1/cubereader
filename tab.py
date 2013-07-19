@@ -5,6 +5,7 @@ Created on Wed Jul 10 13:14:51 2013
 @author: JG
 """
 
+import os
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
@@ -22,6 +23,7 @@ import export
 import color
 import data_view
 import plot_tools
+import wraith_for_mf1read
 #from mayavi import mlab
 
 plt.ioff()
@@ -75,7 +77,9 @@ class Tab(QtGui.QWidget):
         self.export_graph_button.setSizePolicy(QtGui.QSizePolicy.Fixed, 
                                                QtGui.QSizePolicy.Fixed)
         
-        
+        self.wraith = QtGui.QPushButton('Open Wraith for Current Graph')
+        self.wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
+                                  QtGui.QSizePolicy.Fixed)
         
         
         self.connect_events()
@@ -88,12 +92,16 @@ class Tab(QtGui.QWidget):
         hbox.addWidget(self.slider)
         vbox.addLayout(hbox)
         vbox.addWidget(self.export_graph_button)
+        vbox.addWidget(self.wraith)
 
         self.setLayout(vbox)
         
 
 
     def change_display(self):
+        """
+        changes the view between ev and wavelength
+        """
         self.graph_axes.cla()
         if self.data_view.display_ev:
             self.img2, = self.graph_axes.plot(1240/self.xdata[...],
@@ -123,13 +131,32 @@ class Tab(QtGui.QWidget):
                                                self.on_pick_color)
         self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
                      self.export_graph)
+        self.connect(self.wraith, QtCore.SIGNAL('clicked()'),
+                     self.open_wraith)
                      
     def export_graph(self):
-        folder, _ = QtGui.QFileDialog.getExistingDirectory()
-        filename = os.path.join(folder,)
+        """
+        exports the current graph to a two column text file in the 
+        original file's folder
+        """
+
         print 'saving graph at:', folder
-        export.export_graph(self.filename,filename, self.xcoordinate,
-                            self.ycoordinate)
+        if self.data_view.display_ev:
+            output_filename = self.filename + 'x' + self.data_view.xcoordinate
+                                            + 'y' + self.data_view.ycoordinate
+                                            + 'wavelength'
+                                            + '.txt'            
+            export.export_graph(self.filename,output_filename,
+                                1240/self.data_view.xcoordinate,
+                                self.data_view.ycoordinate)
+        else:
+            output_filename = self.filename + 'x' + self.data_view.xcoordinate
+                                            + 'y' + self.data_view.ycoordinate
+                                            + 'wavelength'
+                                            + '.txt'
+            export.export_graph(self.filename,output_filename,
+                                self.data_view.xcoordinate,
+                                self.data_view.ycoordinate)
         print 'Graph saved'  
         
     def on_motion(self, event):        
@@ -207,7 +234,22 @@ class Tab(QtGui.QWidget):
     def on_release(self, event):
         'on release we reset the press data'
         self.press = False
-            
+     
+    def open_wraith(self):
+        if self.data_view.display_ev:
+            self.wraith_window = wraith_for_mf1read.Form(self.filename, 1240/self.xdata[...],
+                                                     self.ycube[self.data_view.xcoordinate,
+                                                           self.data_view.ycoordinate,:],
+                                                     self.data_view.xcoordinate,
+                                                     self.data_view.ycoordinate)
+        else:
+            self.wraith_window = wraith_for_mf1read.Form(self.filename, self.xdata[...],
+                                                     self.ycube[self.data_view.xcoordinate,
+                                                           self.data_view.ycoordinate,:],
+                                                     self.data_view.xcoordinate,
+                                                     self.data_view.ycoordinate)
+        self.wraith_window.show()                                                        
+       
     def reset_colors(self):
         self.img.set_clim(0, self.maxval)
         self.data_view.currentmaxvalcolor = self.maxval

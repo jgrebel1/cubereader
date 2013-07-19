@@ -28,9 +28,8 @@ def convert_mf1():
             print 'Pick a folder to save the hdf5 file'
             hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
             default_values = default.DefaultValues(filename)
-            #filename, extension = os.path.splitext(filename)
             basename = analysis.get_file_basename(filename)
-            hdf5_file = os.path.join(hdf5_directory, basename)
+            hdf5_file = os.path.join(hdf5_directory, basename) +'.hdf5'
             
             
             dimension1, dimension2, global_bool = get_initial_settings(default_values)
@@ -38,11 +37,7 @@ def convert_mf1():
             cube_loader.Mf1File(filename,hdf5_file,
                                 dimension1, dimension2,
                                 global_bool)
-                                
-            #rename with hdf5 extension
-            #full_hdf5_file = os.path.join(hdf5_file,'.hdf5')
-            #os.rename(hdf5_file, full_hdf5_file)
-            
+
             print 'Conversion Complete'
         else:
             print 'No file selected'

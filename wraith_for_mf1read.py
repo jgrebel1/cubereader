@@ -275,7 +275,7 @@ class Form(QMainWindow):
         self.on_show()
 
 
-    def  _fits(self):
+    def  write_fits(self):
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.Directory)
         dialog.setOption(QFileDialog.ShowDirsOnly,True)

@@ -58,24 +58,6 @@ class Mf1File():
             return False
         else:
             return True
-            
-    def fix_dimensions(self):
-        """
-        fills in zeros for the missing spectra to make the dimensions 
-        correspond to the data size
-        """
-        missingspectra = self.dimension1*self.dimension2-self.datasize
-        if self.global_bool:
-            for i in np.arange(self.datasize,self.dimension1*self.dimension2):
-                self.graph_array[i] = np.repeat(0,1664)
-        else:
-            for i in np.arange(self.datasize,self.dimension1*self.dimension2):
-                self.graph_array[i] = np.repeat(0,3264)
-        print 'filled in', missingspectra, 'missing spectra as zeros'
-        
-    def find_maxval(self):
-        maxval = np.amax(self.ycube)
-        return maxval
         
     def build_xdata(self):
         """

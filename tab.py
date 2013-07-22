@@ -6,6 +6,14 @@ Created on Wed Jul 10 13:14:51 2013
 """
 
 import os
+os.environ['ETS_TOOLKIT'] = 'qt4'
+from pyface.qt import QtGui, QtCore
+from traits.api import HasTraits, Instance, on_trait_change, \
+    Int, Dict
+from traitsui.api import View, Item
+from mayavi.core.ui.api import MayaviScene, MlabSceneModel, \
+        SceneEditor
+
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
@@ -24,7 +32,7 @@ import color
 import data_view
 import plot_tools
 import wraith_for_mf1read
-#from mayavi import mlab
+import visualization
 
 plt.ioff()
             
@@ -40,8 +48,6 @@ class Tab(QtGui.QWidget):
         self.xdata = self.hdf5["xdata"]
         self.maxval = analysis.find_maxval(self.ycube[...])
         self.press = False
-        #mlab.contour3d(self.ycube[...])
-        #mlab.show()
         self.make_frame()
  
     
@@ -81,7 +87,30 @@ class Tab(QtGui.QWidget):
         self.wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
                                   QtGui.QSizePolicy.Fixed)
         
-        
+        self.visualization = QtGui.QPushButton('Open Visualization')
+        self.visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
+                                         QtGui.QSizePolicy.Fixed)
+        self.visualization_min_color_label = QtGui.QLabel('Min Color:')
+        self.visualization_min_color_textbox = QtGui.QLineEdit(str(self.data_view.visualization_min_color))
+        self.connect(self.visualization_min_color_textbox, 
+                     QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_visualization_settings)
+        self.visualization_max_color_label = QtGui.QLabel('Max Color:')
+        self.visualization_max_color_textbox = QtGui.QLineEdit(str(self.data_view.visualization_max_color))
+        self.connect(self.visualization_max_color_textbox, 
+                     QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_visualization_settings)
+        self.visualization_min_slice_label = QtGui.QLabel('Min Wavelength:')
+        self.visualization_min_slice_textbox = QtGui.QLineEdit(str(self.xdata[-1]))
+        self.connect(self.visualization_min_slice_textbox, 
+                     QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_visualization_settings)
+        self.visualization_max_slice_label = QtGui.QLabel('Max Wavelength:')
+        self.visualization_max_slice_textbox = QtGui.QLineEdit(str(self.xdata[0]))
+        self.connect(self.visualization_max_slice_textbox, 
+                     QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_visualization_settings)
+                             
         self.connect_events()
         
         hbox = QtGui.QHBoxLayout()
@@ -93,6 +122,19 @@ class Tab(QtGui.QWidget):
         vbox.addLayout(hbox)
         vbox.addWidget(self.export_graph_button)
         vbox.addWidget(self.wraith)
+        visualization_hbox = QtGui.QHBoxLayout()
+        visualization_hbox.addStretch(1)
+        visualization_hbox.setDirection(QtGui.QBoxLayout.LeftToRight)
+        visualization_hbox.addWidget(self.visualization)
+        visualization_hbox.addWidget(self.visualization_min_color_label)
+        visualization_hbox.addWidget(self.visualization_min_color_textbox)
+        visualization_hbox.addWidget(self.visualization_max_color_label)
+        visualization_hbox.addWidget(self.visualization_max_color_textbox)
+        visualization_hbox.addWidget(self.visualization_min_slice_label)
+        visualization_hbox.addWidget(self.visualization_min_slice_textbox)
+        visualization_hbox.addWidget(self.visualization_max_slice_label)
+        visualization_hbox.addWidget(self.visualization_max_slice_textbox)
+        vbox.addLayout(visualization_hbox)
 
         self.setLayout(vbox)
         
@@ -102,21 +144,23 @@ class Tab(QtGui.QWidget):
         """
         changes the view between ev and wavelength
         """
-        self.graph_axes.cla()
+        self. img2 = plot_tools.change_display(self.graph_axes, self.ycube, self.xdata,
+                                  self.data_view)
         if self.data_view.display_ev:
-            self.img2, = self.graph_axes.plot(1240/self.xdata[...],
-                                      self.ycube[self.data_view.ycoordinate,
-                                                 self.data_view.xcoordinate,:],
-                                      '.')
-            self.graph_axes.set_xlabel('ev')
-            
+            self.visualization_min_slice_label.setText('Min ev:')
+            self.visualization_min_slice_textbox.setText(str(1240/self.xdata[self.data_view.visualization_max_slice]))
+            self.visualization_max_slice_label.setText('Max ev:')
+            self.visualization_max_slice_textbox.setText(str(1240/self.xdata[self.data_view.visualization_min_slice]))
         else:
-            self.img2, = self.graph_axes.plot(self.xdata[...],
-                                      self.ycube[self.data_view.ycoordinate,
-                                                 self.data_view.xcoordinate,:],
-                                      '.')       
-            self.graph_axes.set_xlabel('$\lambda$ [nm]')
-            
+            self.visualization_min_slice_label.setText('Min Wavelength:')
+            self.visualization_min_slice_textbox.setText(str(self.xdata[self.data_view.visualization_min_slice]))         
+            self.visualization_max_slice_label.setText('Max Wavelength:')
+            self.visualization_max_slice_textbox.setText(str(self.xdata[self.data_view.visualization_max_slice]))      
+    def close_tab(self):
+        if self.tab.currentWidget().hdf5:
+            self.tab.currentWidget().hdf5.close()
+        self.tab.removeTab(self.tab.currentIndex())  
+        
     def connect_events(self):
         """connect to all the events we need"""
         self.cidpress = self.img.figure.canvas.mpl_connect(
@@ -133,6 +177,8 @@ class Tab(QtGui.QWidget):
                      self.export_graph)
         self.connect(self.wraith, QtCore.SIGNAL('clicked()'),
                      self.open_wraith)
+        self.connect(self.visualization, QtCore.SIGNAL('clicked()'),
+                     self.open_visualization)
                      
     def export_graph(self):
         """
@@ -142,18 +188,20 @@ class Tab(QtGui.QWidget):
 
         print 'saving graph at:', folder
         if self.data_view.display_ev:
-            output_filename = self.filename + 'x' + self.data_view.xcoordinate
-                                            + 'y' + self.data_view.ycoordinate
-                                            + 'wavelength'
-                                            + '.txt'            
+            (output_filename) = (self.filename
+                                 + 'x' + self.data_view.xcoordinate
+                                 + 'y' + self.data_view.ycoordinate
+                                 + 'wavelength'
+                                 + '.txt')            
             export.export_graph(self.filename,output_filename,
                                 1240/self.data_view.xcoordinate,
                                 self.data_view.ycoordinate)
         else:
-            output_filename = self.filename + 'x' + self.data_view.xcoordinate
-                                            + 'y' + self.data_view.ycoordinate
-                                            + 'wavelength'
-                                            + '.txt'
+            (output_filename) = (self.filename
+                                 + 'x' + self.data_view.xcoordinate
+                                 + 'y' + self.data_view.ycoordinate
+                                 + 'wavelength'
+                                 + '.txt')
             export.export_graph(self.filename,output_filename,
                                 self.data_view.xcoordinate,
                                 self.data_view.ycoordinate)
@@ -234,18 +282,23 @@ class Tab(QtGui.QWidget):
     def on_release(self, event):
         'on release we reset the press data'
         self.press = False
-     
+    
+    def open_visualization(self):
+        self.visualization_window = visualization.MayaviQWidget(self.ycube[:,:,self.data_view.visualization_max_slice:self.data_view.visualization_min_slice],
+                                                                self.data_view.visualization_min_color,
+                                                                self.data_view.visualization_max_color)
+        self.visualization_window.show()
     def open_wraith(self):
         if self.data_view.display_ev:
             self.wraith_window = wraith_for_mf1read.Form(self.filename, 1240/self.xdata[...],
-                                                     self.ycube[self.data_view.xcoordinate,
-                                                           self.data_view.ycoordinate,:],
+                                                     self.ycube[self.data_view.ycoordinate,
+                                                           self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
                                                      self.data_view.ycoordinate)
         else:
             self.wraith_window = wraith_for_mf1read.Form(self.filename, self.xdata[...],
-                                                     self.ycube[self.data_view.xcoordinate,
-                                                           self.data_view.ycoordinate,:],
+                                                     self.ycube[self.data_view.ycoordinate,
+                                                           self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
                                                      self.data_view.ycoordinate)
         self.wraith_window.show()                                                        
@@ -286,8 +339,31 @@ class Tab(QtGui.QWidget):
         self.marker.set_ydata(self.data_view.ycoordinate)
         
     def update_image_from_slider(self, sliderval):
-        self.data_view.slider_val = sliderval
+        if self.data_view.display_ev:
+            self.data_view.slider_val = sliderval-1
+        else:
+            self.data_view.slider_val = 1600 - sliderval           
         plot_tools.plot_image(self.img, self.img_axes, self.ycube, self.xdata,
                               self.data_view)
-
+                              
+    def update_visualization_settings(self):
+        """
+        updates data view to have correct values from text boxes.
+        min slice and max slice switch places depending on whether the program
+        is in ev mode. This is because ev's max is wavelength's min.
+        """
+        self.data_view.visualization_min_color = float(self.visualization_min_color_textbox.text())
+        self.data_view.visualization_max_color = float(self.visualization_max_color_textbox.text())
+        min_slice = float(self.visualization_min_slice_textbox.text())
+        max_slice = float(self.visualization_max_slice_textbox.text())
+        if self.data_view.display_ev:
+            self.data_view.visualization_min_slice =1599 - analysis.ev_to_slice(max_slice, self.xdata)
+            print "min slice is:", self.data_view.visualization_min_slice
+            self.data_view.visualization_max_slice =1599 - analysis.ev_to_slice(min_slice, self.xdata)
+            print "max slice is:", self.data_view.visualization_max_slice
+        else:
+            self.data_view.visualization_min_slice = 1599 - analysis.wavelength_to_slice(min_slice, self.xdata)
+            self.data_view.visualization_max_slice = 1599 -analysis.wavelength_to_slice(max_slice, self.xdata)
+            print "min slice is:", self.data_view.visualization_min_slice
+            print "max slice is:", self.data_view.visualization_max_slice
     

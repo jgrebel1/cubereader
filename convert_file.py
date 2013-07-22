@@ -26,6 +26,9 @@ def convert_mf1():
         if filename:    
             print('Reading file: %s'%filename)
             print 'Pick a folder to save the hdf5 file'
+            with open(filename,'rb') as fid:
+                text_header=fid.read(2048)
+                print text_header
             hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
             default_values = default.DefaultValues(filename)
             basename = analysis.get_file_basename(filename)

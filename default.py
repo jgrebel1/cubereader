@@ -12,7 +12,6 @@ class DefaultValues():
         self.filename = filename
         with open(filename,'rb') as fid:
             self.text_header=fid.read(2048)
-        print self.text_header
             
     def default_dimensions(self):
         """

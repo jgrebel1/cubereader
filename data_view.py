@@ -16,3 +16,7 @@ class DataView():
         self.currentmaxvalcolor = maxval
         self.currentminvalcolor = 0
         self.slider_val = 800
+        self.visualization_min_color = 0
+        self.visualization_max_color = maxval
+        self.visualization_min_slice = 0
+        self.visualization_max_slice = 1599

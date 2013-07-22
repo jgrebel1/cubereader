@@ -6,10 +6,11 @@ Gui Demo for some of the structure.
 """
 
 import os
+from pyface.qt import QtGui, QtCore
 import sys
 import matplotlib
-from PySide import QtCore
-from PySide import QtGui
+#from PySide import QtCore
+#from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
 import wraith.wraith
 #project specific items
@@ -109,17 +110,20 @@ class AppForm(QtGui.QMainWindow):
             if filename:
                 basename = analysis.get_file_basename(filename)            
                 with open(filename,'rb') as f: 
-                    #generates a new variable for each file to hold the header window.
+                    #generates a new variable for each file to hold
+                    #the header window.
                     #I need to find a better way to do this
                     #exec("self.%s = header.HeaderWindow(basename, f.read(2048))"%(basename+'_header'))
-                    self.header_window = header.HeaderWindow(basename, f.read(2048))
+                    self.header_window = header.HeaderWindow(basename, 
+                                                             f.read(2048))
                 newtab = tab.Tab(filename)         
                 newtab.setWindowTitle('%s' %basename)
                 self.tab.addTab(newtab, '%s' %basename)
             else:
                 print 'No file selected'
+
 def main():
-    app = QtGui.QApplication(os.sys.argv)
+    app = QtGui.QApplication.instance()
     form = AppForm()
     form.show()
     app.exec_()

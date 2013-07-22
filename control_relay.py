@@ -5,13 +5,13 @@ Created on Fri Jul 12 18:26:34 2013
 @author: JG
 """
 import numpy as np
-from scipy import interpolate
 from PySide import QtCore
 from PySide import QtGui
 
 #project specific items
 import plot_tools
 import control
+import analysis
 
 
 class ControlRelay(QtCore.QObject):
@@ -80,42 +80,15 @@ class ControlRelay(QtCore.QObject):
         the image displayed is the image with the first integer value
         of the input
         """
+        slice_input = float(self.window.imageslice.text())
         if self.current_tab.data_view.display_ev:
-            text_input = 1240/float(self.window.imageslice.text())
-            xdata = np.array(self.current_tab.xdata[...])
-            f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
-            if text_input > xdata[0]:
-                imagewavelength = xdata[0]
-                imageval = 1599
-            elif text_input < xdata[-1]:
-                imagewavelength = xdata[1599]
-                imageval = 0
-            else:   
-                for number in np.arange(1600):
-                    if number > f(text_input):
-                        imagewavelength = xdata[1600-number]
-                        imageval = 1599-number
-                        break            
-            self.current_tab.slider.setValue(imageval)  
-            print 'The image ev is now :%0.2f'%float(1240/imagewavelength)            
-        else:
-            text_input = float(self.window.imageslice.text())            
-            xdata = np.array(self.current_tab.xdata[...])
-            f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
-            if text_input > xdata[0]:
-                imagewavelength = xdata[0]
-                imageval = 1599
-            elif text_input < xdata[-1]:
-                imagewavelength = xdata[1599]
-                imageval = 0
-            else:
-                for number in np.arange(1600):
-                    if number > f(text_input):
-                        imagewavelength = xdata[1600-number]
-                        imageval = number
-                        break            
+            imageval = analysis.ev_to_slice(slice_input, 
+                                            self.current_tab.xdata) 
+            self.current_tab.slider.setValue(1599 - imageval) 
+        else:      
+            imageval = analysis.wavelength_to_slice(slice_input, 
+                                                    self.current_tab.xdata)
             self.current_tab.slider.setValue(imageval) 
-            print 'The image wavelength is now %0.0f'%imagewavelength
 
     def update_maxcolor_from_control(self):
         """

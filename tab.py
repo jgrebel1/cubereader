@@ -33,6 +33,7 @@ import data_view
 import plot_tools
 import wraith_for_mf1read
 import visualization
+import peak_bank
 
 plt.ioff()
             
@@ -48,6 +49,7 @@ class Tab(QtGui.QWidget):
         self.xdata = self.hdf5["xdata"]
         self.maxval = analysis.find_maxval(self.ycube[...])
         self.press = False
+        self.peak_bank = peak_bank.PeakBank()
         self.make_frame()
  
     
@@ -294,14 +296,16 @@ class Tab(QtGui.QWidget):
                                                      self.ycube[self.data_view.ycoordinate,
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
-                                                     self.data_view.ycoordinate)
+                                                     self.data_view.ycoordinate,
+                                                     self.peak_bank)
         else:
             self.wraith_window = wraith_for_mf1read.Form(self.filename, self.xdata[...],
                                                      self.ycube[self.data_view.ycoordinate,
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
-                                                     self.data_view.ycoordinate)
-        self.wraith_window.show()                                                        
+                                                     self.data_view.ycoordinate,
+                                                     self.peak_bank)
+        self.wraith_window.show()                                                  
        
     def reset_colors(self):
         self.img.set_clim(0, self.maxval)
@@ -366,4 +370,4 @@ class Tab(QtGui.QWidget):
             self.data_view.visualization_max_slice = 1599 -analysis.wavelength_to_slice(max_slice, self.xdata)
             print "min slice is:", self.data_view.visualization_min_slice
             print "max slice is:", self.data_view.visualization_max_slice
-    
+

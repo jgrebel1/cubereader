@@ -42,16 +42,19 @@ from wraith.data_formats import *
 #custom gui elements to adjust and display fitting parameters
 from wraith.parameter_gui import *
 from wraith.optimization_gui import *
+import ast
+import json
 
 #Main window to control plotting
 class Form(QMainWindow):
-    def __init__(self,filename, xdata, ydata, xcoordinate, ycoordinate, parent=None):
+    def __init__(self,filename, xdata, ydata, xcoordinate, ycoordinate, peak_bank, parent=None):
         super(Form, self).__init__(parent)
         self.filename = filename
         self.xdata = xdata
         self.ydata = ydata
         self.xcoordinate = xcoordinate
         self.ycoordinate = ycoordinate
+        self.peak_bank = peak_bank
         self.setWindowTitle('Interactive XPS Explorer')
         self.ignore_signals = False
 
@@ -353,8 +356,55 @@ class Form(QMainWindow):
             #f.close()
             savetxt(str(outfilename), out, delimiter=",", fmt="%10.5f")
 
+    def fill_peak_bank(self):
+        self.peak_bank.peaks.clear()
+        i = 0
+        for file in range(self.series_list_root.rowCount()):
+          for row in range(self.series_list_root.child(file).rowCount()):
+            model_index = self.series_list_root.child(file).child(row).index()
+            checked = self.series_list_model.data(model_index, Qt.CheckStateRole) == (Qt.Checked)
+            if checked:
+                filename = self.series_list_root.child(file).text()
+                peak_list = self.files[filename].get_spectrum(row).peaks.peak_list
+                for peak in peak_list:
+                    peak_identifier = str(peak)
+                    #self.peak_bank.peaks[peak_identifier] = peak.get_spec()
+                    self.peak_bank.table.setRowCount(i+1)
+                    self.peak_bank.table.setItem(i,0, QtGui.QTableWidgetItem(str(peak.get_spec())))
+                    i += 1
+        self.on_show()
+        
+    def clear_peak_bank(self):
+        for table_row in np.arange(self.peak_bank.table.rowCount()):
+            self.peak_bank.table.removeRow(0)
+
+    def fit_from_peak_bank(self):
+        for file in range(self.series_list_root.rowCount()):
+          for row in range(self.series_list_root.child(file).rowCount()):
+            model_index = self.series_list_root.child(file).child(row).index()
+            checked = self.series_list_model.data(model_index, Qt.CheckStateRole) == (Qt.Checked)
+            if checked:
+                filename = self.series_list_root.child(file).text()
+                for table_row in np.arange(self.peak_bank.table.rowCount()):
+                    peak = self.peak_bank.table.item(table_row,0).text()
+                    #peak = self.peak_bank.peaks[peak_identifier]
+                    peak = eval(peak)
+                    name = peak['name']
+                    function = peak['function']
+                    penalty_function = peak['penalty_function']
+                    variables = peak['variables']
+                    values = peak['values']
+                    ranges = peak['ranges']
+                    spectrum = self.files[filename].get_spectrum(row)
+                    spectrum.guess_peak(name, variables, values, ranges, eval(function), eval(penalty_function))
+                    #peaks.optimize_fit(peaks.E(), peaks.nobg())
+        self.on_show()
+    
+    def edit_peak_bank(self):
+        self.peak_bank.show()
+    
     def plot_summary_csv(self):
-      pass
+        pass
 
     def on_about(self):
         msg = __doc__
@@ -616,6 +666,18 @@ class Form(QMainWindow):
         self.button_write_summary = QPushButton("&Export Summary")
         self.button_write_summary.clicked.connect(self.write_summary_csv)
         self.button_write_summary.setShortcut("Ctrl+E")
+        
+        self.button_fill_peak_bank = QPushButton("&Add to Peak Bank")
+        self.button_fill_peak_bank.clicked.connect(self.fill_peak_bank)
+        
+        self.button_clear_peak_bank = QPushButton("Clear Peak Bank")
+        self.button_clear_peak_bank.clicked.connect(self.clear_peak_bank)
+
+        self.button_fit_from_peak_bank = QPushButton("&Fit From Peak Bank")
+        self.button_fit_from_peak_bank.clicked.connect(self.fit_from_peak_bank)
+        
+        self.button_edit_peak_bank = QPushButton("&Edit Peak Bank")
+        self.button_edit_peak_bank.clicked.connect(self.edit_peak_bank)
 
         #action buttons layout
         mods_box = QGridLayout()
@@ -626,6 +688,10 @@ class Form(QMainWindow):
         mods_box.addWidget(self.button_write_fits,1,1)
         mods_box.addWidget(self.button_load_fits,1,2)
         mods_box.addWidget(self.button_write_summary,3,1)
+        mods_box.addWidget(self.button_fill_peak_bank,4,0)
+        mods_box.addWidget(self.button_clear_peak_bank,4,1)
+        mods_box.addWidget(self.button_fit_from_peak_bank,4,2)
+        mods_box.addWidget(self.button_edit_peak_bank,5,0)
 
         left_vbox = QVBoxLayout()
         left_vbox.addWidget(self.canvas)

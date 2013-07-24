@@ -14,27 +14,27 @@ matplotlib.rcParams['backend.qt4']='PySide'
 
 class PeakBank(QtGui.QDialog):
     """
-    Window with inputs to control color values in an Image
+    Holds peaks 
     """
     def __init__(self):
         super(PeakBank, self).__init__()
         self.setWindowTitle('PeakBank')
-        self.peaks = {}
+        self.cube_peaks = {}
         self.inputs()
 
     def inputs(self):
         
         self.table = QtGui.QTableWidget()  
-        #self.table.setRowCount(6)
         self.table.setColumnCount(1)
         
-        #self.table.setItem(1, 1, QtGui.QTableWidgetItem(str(self.peaks)))
-
+        self.button_remove_peak = QtGui.QPushButton("&Remove Peak")
+        self.button_remove_peak.clicked.connect(self.remove_peak)        
         
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
         
-        grid.addWidget(self.table)  
+        grid.addWidget(self.table,0,0)  
+        grid.addWidget(self.button_remove_peak,1,0)
         self.setLayout(grid)
     
     def display_window(self):
@@ -42,5 +42,8 @@ class PeakBank(QtGui.QDialog):
     
     def hide_window(self):
         self.hide()
+    
+    def remove_peak(self):
+        self.table.removeRow(self.table.currentRow())
         
         

@@ -15,6 +15,7 @@ from mayavi.core.ui.api import MayaviScene, MlabSceneModel, \
         SceneEditor
 
 import numpy as np
+from numpy import array
 import matplotlib
 from matplotlib import pyplot as plt
 from PySide import QtCore
@@ -23,6 +24,7 @@ matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 import h5py
+
 
 #project specific items
 
@@ -81,39 +83,45 @@ class Tab(QtGui.QWidget):
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.set_slider_settings()
         
-        self.export_graph_button = QtGui.QPushButton('Export Graph')
-        self.export_graph_button.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+        self.button_export_graph = QtGui.QPushButton('Export Graph')
+        self.button_export_graph.setSizePolicy(QtGui.QSizePolicy.Fixed, 
                                                QtGui.QSizePolicy.Fixed)
+        self.button_export_graph.clicked.connect(self.export_graph)
         
-        self.wraith = QtGui.QPushButton('Open Wraith for Current Graph')
-        self.wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
+        self.button_wraith = QtGui.QPushButton('Open Wraith for Current Graph')
+        self.button_wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
                                   QtGui.QSizePolicy.Fixed)
+        self.button_wraith.clicked.connect(self.open_wraith)
         
-        self.visualization = QtGui.QPushButton('Open Visualization')
-        self.visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
+        self.button_visualization = QtGui.QPushButton('Open Visualization')
+        self.button_visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
                                          QtGui.QSizePolicy.Fixed)
-        self.visualization_min_color_label = QtGui.QLabel('Min Color:')
-        self.visualization_min_color_textbox = QtGui.QLineEdit(str(self.data_view.visualization_min_color))
-        self.connect(self.visualization_min_color_textbox, 
+        self.button_visualization.clicked.connect(self.open_visualization)
+        
+        #visualization inputs
+        self.label_visualization_min_color = QtGui.QLabel('Min Color:')
+        self.textbox_visualization_min_color = QtGui.QLineEdit(str(self.data_view.visualization_min_color))
+        self.connect(self.textbox_visualization_min_color, 
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
-        self.visualization_max_color_label = QtGui.QLabel('Max Color:')
-        self.visualization_max_color_textbox = QtGui.QLineEdit(str(self.data_view.visualization_max_color))
-        self.connect(self.visualization_max_color_textbox, 
+                     
+        self.label_visualization_max_color= QtGui.QLabel('Max Color:')
+        self.textbox_visualization_max_color = QtGui.QLineEdit(str(self.data_view.visualization_max_color))
+        self.connect(self.textbox_visualization_max_color, 
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
-        self.visualization_min_slice_label = QtGui.QLabel('Min Wavelength:')
-        self.visualization_min_slice_textbox = QtGui.QLineEdit(str(self.xdata[-1]))
-        self.connect(self.visualization_min_slice_textbox, 
+                     
+        self.label_visualization_min_slice = QtGui.QLabel('Min Wavelength:')
+        self.textbox_visualization_min_slice = QtGui.QLineEdit(str(self.xdata[-1]))
+        self.connect(self.textbox_visualization_min_slice, 
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
-        self.visualization_max_slice_label = QtGui.QLabel('Max Wavelength:')
-        self.visualization_max_slice_textbox = QtGui.QLineEdit(str(self.xdata[0]))
-        self.connect(self.visualization_max_slice_textbox, 
+                     
+        self.label_visualization_max_slice = QtGui.QLabel('Max Wavelength:')
+        self.textbox_visualization_max_slice = QtGui.QLineEdit(str(self.xdata[0]))
+        self.connect(self.textbox_visualization_max_slice, 
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
-                             
-        self.connect_events()
         
         hbox = QtGui.QHBoxLayout()
         vbox = QtGui.QVBoxLayout()
@@ -122,21 +130,21 @@ class Tab(QtGui.QWidget):
         hbox.addWidget(left_spacer)
         hbox.addWidget(self.slider)
         vbox.addLayout(hbox)
-        vbox.addWidget(self.export_graph_button)
-        vbox.addWidget(self.wraith)
-        visualization_hbox = QtGui.QHBoxLayout()
-        visualization_hbox.addStretch(1)
-        visualization_hbox.setDirection(QtGui.QBoxLayout.LeftToRight)
-        visualization_hbox.addWidget(self.visualization)
-        visualization_hbox.addWidget(self.visualization_min_color_label)
-        visualization_hbox.addWidget(self.visualization_min_color_textbox)
-        visualization_hbox.addWidget(self.visualization_max_color_label)
-        visualization_hbox.addWidget(self.visualization_max_color_textbox)
-        visualization_hbox.addWidget(self.visualization_min_slice_label)
-        visualization_hbox.addWidget(self.visualization_min_slice_textbox)
-        visualization_hbox.addWidget(self.visualization_max_slice_label)
-        visualization_hbox.addWidget(self.visualization_max_slice_textbox)
-        vbox.addLayout(visualization_hbox)
+        vbox.addWidget(self.button_export_graph)
+        vbox.addWidget(self.button_wraith)
+        hbox_visualization = QtGui.QHBoxLayout()
+        hbox_visualization.addStretch(1)
+        hbox_visualization.setDirection(QtGui.QBoxLayout.LeftToRight)
+        hbox_visualization.addWidget(self.button_visualization)
+        hbox_visualization.addWidget(self.label_visualization_min_color)
+        hbox_visualization.addWidget(self.textbox_visualization_min_color)
+        hbox_visualization.addWidget(self.label_visualization_max_color)
+        hbox_visualization.addWidget(self.textbox_visualization_max_color)
+        hbox_visualization.addWidget(self.label_visualization_min_slice)
+        hbox_visualization.addWidget(self.textbox_visualization_min_slice)
+        hbox_visualization.addWidget(self.label_visualization_max_slice)
+        hbox_visualization.addWidget(self.textbox_visualization_max_slice)
+        vbox.addLayout(hbox_visualization)
 
         self.setLayout(vbox)
         
@@ -149,15 +157,15 @@ class Tab(QtGui.QWidget):
         self. img2 = plot_tools.change_display(self.graph_axes, self.ycube, self.xdata,
                                   self.data_view)
         if self.data_view.display_ev:
-            self.visualization_min_slice_label.setText('Min ev:')
-            self.visualization_min_slice_textbox.setText(str(1240/self.xdata[self.data_view.visualization_max_slice]))
-            self.visualization_max_slice_label.setText('Max ev:')
-            self.visualization_max_slice_textbox.setText(str(1240/self.xdata[self.data_view.visualization_min_slice]))
+            self.label_visualization_min_slice.setText('Min ev:')
+            self.textbox_visualization_min_slice.setText(str(1240/self.xdata[self.data_view.visualization_max_slice]))
+            self.label_visualization_max_slice.setText('Max ev:')
+            self.textbox_visualization_max_slice.setText(str(1240/self.xdata[self.data_view.visualization_min_slice]))
         else:
-            self.visualization_min_slice_label.setText('Min Wavelength:')
-            self.visualization_min_slice_textbox.setText(str(self.xdata[self.data_view.visualization_min_slice]))         
-            self.visualization_max_slice_label.setText('Max Wavelength:')
-            self.visualization_max_slice_textbox.setText(str(self.xdata[self.data_view.visualization_max_slice]))      
+            self.label_visualization_min_slice.setText('Min Wavelength:')
+            self.textbox_visualization_min_slice.setText(str(self.xdata[self.data_view.visualization_min_slice]))         
+            self.label_visualization_max_slice.setText('Max Wavelength:')
+            self.textbox_visualization_max_slice.setText(str(self.xdata[self.data_view.visualization_max_slice]))      
     def close_tab(self):
         if self.tab.currentWidget().hdf5:
             self.tab.currentWidget().hdf5.close()
@@ -175,12 +183,6 @@ class Tab(QtGui.QWidget):
                      self.update_image_from_slider)
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
-        self.connect(self.export_graph_button, QtCore.SIGNAL('clicked()'),
-                     self.export_graph)
-        self.connect(self.wraith, QtCore.SIGNAL('clicked()'),
-                     self.open_wraith)
-        self.connect(self.visualization, QtCore.SIGNAL('clicked()'),
-                     self.open_visualization)
                      
     def export_graph(self):
         """
@@ -208,6 +210,13 @@ class Tab(QtGui.QWidget):
                                 self.data_view.xcoordinate,
                                 self.data_view.ycoordinate)
         print 'Graph saved'  
+        
+    def fit_all_from_peak_bank(self):
+        pass
+        #for location in self.peak_bank.cube_peaks:
+            #for peak in self.peak_bank.cube_peaks[location]:
+                #print 'peak amplitude at', location,'is', peak['values'][0]
+                    
         
     def on_motion(self, event):        
         """
@@ -297,14 +306,14 @@ class Tab(QtGui.QWidget):
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
                                                      self.data_view.ycoordinate,
-                                                     self.peak_bank)
+                                                     self.peak_bank, self.ycube)
         else:
             self.wraith_window = wraith_for_mf1read.Form(self.filename, self.xdata[...],
                                                      self.ycube[self.data_view.ycoordinate,
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
                                                      self.data_view.ycoordinate,
-                                                     self.peak_bank)
+                                                     self.peak_bank, self.ycube)
         self.wraith_window.show()                                                  
        
     def reset_colors(self):

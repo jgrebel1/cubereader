@@ -45,7 +45,8 @@ from wraith.optimization_gui import *
 
 #Main window to control plotting
 class Form(QMainWindow):
-    def __init__(self,filename, xdata, ydata, xcoordinate, ycoordinate, peak_bank, ycube, parent=None):
+    def __init__(self,filename, xdata, ydata, xcoordinate, ycoordinate,
+                 peak_bank, ycube, parent=None):
         super(Form, self).__init__(parent)
         self.filename = filename
         self.xdata = xdata
@@ -396,7 +397,7 @@ class Form(QMainWindow):
                     spectrum.guess_peak(name, variables, values, ranges, eval(function), eval(penalty_function))
         self.on_show()
     
-    def fit_all_from_peak_bank(self):
+    def fit_cube_from_peak_bank(self):
         (rows,columns,slices) = np.shape(self.ycube[...])
         for i in np.arange(rows):
             for j in np.arange(columns):
@@ -404,7 +405,7 @@ class Form(QMainWindow):
                 peak_holder.load_from_mf1_cube(self.xdata[:],
                                                self.ycube[i,j,:],
                                                j,
-                                               i)
+                                               i)                    
                 for table_row in np.arange(self.peak_bank.table.rowCount()):
                     peak = self.peak_bank.table.item(table_row,0).text()
                     peak = eval(peak)
@@ -423,9 +424,9 @@ class Form(QMainWindow):
                 for peak in peak_list:
                     spectrum_peaks.append(peak.get_spec())
                 location = "%s"%"x"+str(j)+"y"+str(i)
-                self.peak_bank.cube_peaks[location] = spectrum_peaks
+                self.peak_bank.cube_peaks.append(spectrum_peaks)
     
-    def edit_peak_bank(self):
+    def show_peak_bank(self):
         self.peak_bank.show()
     
     def plot_summary_csv(self):
@@ -701,11 +702,11 @@ class Form(QMainWindow):
         self.button_fit_from_peak_bank = QPushButton("&Fit From Peak Bank")
         self.button_fit_from_peak_bank.clicked.connect(self.fit_from_peak_bank)
         
-        self.button_edit_peak_bank = QPushButton("&Edit Peak Bank")
-        self.button_edit_peak_bank.clicked.connect(self.edit_peak_bank)
+        self.button_show_peak_bank = QPushButton("&Show Peak Bank")
+        self.button_show_peak_bank.clicked.connect(self.show_peak_bank)
         
-        self.button_fit_test = QPushButton("&Fit Test")
-        self.button_fit_test.clicked.connect(self.fit_all_from_peak_bank)
+        self.button_fit_cube_from_peak_bank = QPushButton("&Fit Cube From Peak Bank")
+        self.button_fit_cube_from_peak_bank.clicked.connect(self.fit_cube_from_peak_bank)
 
         #action buttons layout
         mods_box = QGridLayout()
@@ -719,8 +720,8 @@ class Form(QMainWindow):
         mods_box.addWidget(self.button_fill_peak_bank,4,0)
         mods_box.addWidget(self.button_clear_peak_bank,4,1)
         mods_box.addWidget(self.button_fit_from_peak_bank,4,2)
-        mods_box.addWidget(self.button_edit_peak_bank,5,0)
-        mods_box.addWidget(self.button_fit_test,5,1)
+        mods_box.addWidget(self.button_show_peak_bank,5,0)
+        mods_box.addWidget(self.button_fit_cube_from_peak_bank,5,1)
 
         left_vbox = QVBoxLayout()
         left_vbox.addWidget(self.canvas)

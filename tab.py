@@ -50,8 +50,9 @@ class Tab(QtGui.QWidget):
         self.ycube = self.hdf5["ycube"]
         self.xdata = self.hdf5["xdata"]
         self.maxval = analysis.find_maxval(self.ycube[...])
+        self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.ycube)
         self.press = False
-        self.peak_bank = peak_bank.PeakBank()
+        self.make_peak_bank()
         self.make_frame()
  
     
@@ -148,6 +149,7 @@ class Tab(QtGui.QWidget):
 
         self.setLayout(vbox)
         
+        self.connect_events()
 
 
     def change_display(self):
@@ -213,10 +215,11 @@ class Tab(QtGui.QWidget):
         
     def fit_all_from_peak_bank(self):
         pass
-        #for location in self.peak_bank.cube_peaks:
-            #for peak in self.peak_bank.cube_peaks[location]:
-                #print 'peak amplitude at', location,'is', peak['values'][0]
                     
+    def make_peak_bank(self):
+        self.peak_bank = peak_bank.PeakBank(self.dimension1, self.dimension2)
+        
+        
         
     def on_motion(self, event):        
         """
@@ -306,14 +309,16 @@ class Tab(QtGui.QWidget):
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
                                                      self.data_view.ycoordinate,
-                                                     self.peak_bank, self.ycube)
+                                                     self.peak_bank,
+                                                     self.ycube)
         else:
             self.wraith_window = wraith_for_mf1read.Form(self.filename, self.xdata[...],
                                                      self.ycube[self.data_view.ycoordinate,
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
                                                      self.data_view.ycoordinate,
-                                                     self.peak_bank, self.ycube)
+                                                     self.peak_bank, 
+                                                     self.ycube)
         self.wraith_window.show()                                                  
        
     def reset_colors(self):
@@ -352,6 +357,7 @@ class Tab(QtGui.QWidget):
         self.marker.set_ydata(self.data_view.ycoordinate)
         
     def update_image_from_slider(self, sliderval):
+        
         if self.data_view.display_ev:
             self.data_view.slider_val = sliderval-1
         else:
@@ -365,10 +371,10 @@ class Tab(QtGui.QWidget):
         min slice and max slice switch places depending on whether the program
         is in ev mode. This is because ev's max is wavelength's min.
         """
-        self.data_view.visualization_min_color = float(self.visualization_min_color_textbox.text())
-        self.data_view.visualization_max_color = float(self.visualization_max_color_textbox.text())
-        min_slice = float(self.visualization_min_slice_textbox.text())
-        max_slice = float(self.visualization_max_slice_textbox.text())
+        self.data_view.visualization_min_color = float(self.textbox_visualization_min_color.text())
+        self.data_view.visualization_max_color = float(self.textbox_visualization_max_color.text())
+        min_slice = float(self.textbox_visualization_min_slice.text())
+        max_slice = float(self.textbox_visualization_max_slice.text())
         if self.data_view.display_ev:
             self.data_view.visualization_min_slice =1599 - analysis.ev_to_slice(max_slice, self.xdata)
             print "min slice is:", self.data_view.visualization_min_slice

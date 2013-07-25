@@ -20,24 +20,10 @@ def get_file_basename(path_name):
     filename, extension = os.path.splitext(path_name)
     basename = os.path.basename(filename)
     return basename
-
-def wavelength_to_slice(wavelength, xdata):
-    """
-    converts an input wavelength into the nearest xdata index using interpolation
-    """
-    xdata = np.array(xdata[...])
-    f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
-    if wavelength > xdata[0]:
-        imageval = 1599
-    elif wavelength < xdata[-1]:
-        imageval = 0
-    else:
-        for number in np.arange(1600):
-            if number > f(wavelength):
-                imageval = number
-                break    
-    return imageval
     
+def get_dimensions(ycube):
+    (rows, columns, slices) = np.shape(ycube[...])
+    return (rows, columns, slices)
 def ev_to_slice(ev, xdata):
     """
     converts an input ev into the nearest xdata index using interpolation
@@ -58,3 +44,21 @@ def ev_to_slice(ev, xdata):
                 imageval = number
                 break    
     return imageval
+    
+def wavelength_to_slice(wavelength, xdata):
+    """
+    converts an input wavelength into the nearest xdata index using interpolation
+    """
+    xdata = np.array(xdata[...])
+    f = interpolate.interp1d(xdata[::-1], np.arange(1600)) 
+    if wavelength > xdata[0]:
+        imageval = 1599
+    elif wavelength < xdata[-1]:
+        imageval = 0
+    else:
+        for number in np.arange(1600):
+            if number > f(wavelength):
+                imageval = number
+                break    
+    return imageval
+    

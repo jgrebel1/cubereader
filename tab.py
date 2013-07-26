@@ -33,7 +33,7 @@ import export
 import color
 import data_view
 import plot_tools
-import wraith_for_mf1read
+import wraith_for_cubereader
 import visualization
 import peak_bank
 
@@ -45,12 +45,18 @@ class Tab(QtGui.QWidget):
         super(Tab, self).__init__(parent)      
         self.filename = filename
         print self.filename
-        self.hdf5 = h5py.File(self.filename,'r')    
-        self.cube = self.hdf5["cube"]
-        self.ycube = self.hdf5["ycube"]
-        self.xdata = self.hdf5["xdata"]
+        self.hdf5 = h5py.File(self.filename,'r') 
+        self.basename = analysis.get_file_basename(self.filename)
+        self.ycube = self.hdf5["Experiments/__unnamed__/data"]
         self.maxval = analysis.find_maxval(self.ycube[...])
-        self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.ycube)
+        self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.ycube)        
+        self.data_view = data_view.DataView(self.maxval, self.number_of_slices)        
+        try:
+            self.xdata = self.hdf5["Experiments/__unnamed__/xdata"][...]
+        except:
+            self.xdata = 1240/analysis.get_xdata(self.hdf5["Experiments/__unnamed__/axis-2"])
+   
+        print 'number of slices is', self.number_of_slices
         self.press = False
         self.make_peak_bank()
         self.make_frame()
@@ -58,7 +64,7 @@ class Tab(QtGui.QWidget):
     
     def make_frame(self):
         
-        self.data_view = data_view.DataView(maxval=self.maxval)
+
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)            
@@ -217,7 +223,7 @@ class Tab(QtGui.QWidget):
         pass
                     
     def make_peak_bank(self):
-        self.peak_bank = peak_bank.PeakBank(self.dimension1, self.dimension2)
+        self.peak_bank = peak_bank.PeakBank(self.basename, self.dimension1, self.dimension2)
         
         
         
@@ -298,13 +304,18 @@ class Tab(QtGui.QWidget):
         self.press = False
     
     def open_visualization(self):
-        self.visualization_window = visualization.MayaviQWidget(self.ycube[:,:,self.data_view.visualization_max_slice:self.data_view.visualization_min_slice],
+        try:
+            self.visualization_window = visualization.MayaviQWidget(self.ycube[:,:,self.data_view.visualization_max_slice:self.data_view.visualization_min_slice],
+                                                                self.data_view.visualization_min_color,
+                                                                self.data_view.visualization_max_color)
+        except ValueError:
+            self.visualization_window = visualization.MayaviQWidget(self.ycube[:,:,self.data_view.visualization_min_slice:self.data_view.visualization_max_slice],
                                                                 self.data_view.visualization_min_color,
                                                                 self.data_view.visualization_max_color)
         self.visualization_window.show()
     def open_wraith(self):
         if self.data_view.display_ev:
-            self.wraith_window = wraith_for_mf1read.Form(self.filename, 1240/self.xdata[...],
+            self.wraith_window = wraith_for_cubereader.Form(self.filename, 1240/self.xdata,
                                                      self.ycube[self.data_view.ycoordinate,
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
@@ -312,7 +323,7 @@ class Tab(QtGui.QWidget):
                                                      self.peak_bank,
                                                      self.ycube)
         else:
-            self.wraith_window = wraith_for_mf1read.Form(self.filename, self.xdata[...],
+            self.wraith_window = wraith_for_cubereader.Form(self.filename, self.xdata,
                                                      self.ycube[self.data_view.ycoordinate,
                                                            self.data_view.xcoordinate,:],
                                                      self.data_view.xcoordinate,
@@ -334,8 +345,8 @@ class Tab(QtGui.QWidget):
         self.cbar.ax.set_picker(5) 
         
     def set_slider_settings(self):
-        self.slider.setRange(1, 1600)
-        self.slider.setValue(800)
+        self.slider.setRange(1, self.number_of_slices)
+        self.slider.setValue(1)
         self.slider.setTracking(True)
         
     def show_ev(self):     
@@ -361,28 +372,26 @@ class Tab(QtGui.QWidget):
         if self.data_view.display_ev:
             self.data_view.slider_val = sliderval-1
         else:
-            self.data_view.slider_val = 1600 - sliderval           
+            self.data_view.slider_val = self.number_of_slices - sliderval           
         plot_tools.plot_image(self.img, self.img_axes, self.ycube, self.xdata,
                               self.data_view)
                               
     def update_visualization_settings(self):
         """
         updates data view to have correct values from text boxes.
-        min slice and max slice switch places depending on whether the program
-        is in ev mode. This is because ev's max is wavelength's min.
         """
         self.data_view.visualization_min_color = float(self.textbox_visualization_min_color.text())
         self.data_view.visualization_max_color = float(self.textbox_visualization_max_color.text())
         min_slice = float(self.textbox_visualization_min_slice.text())
         max_slice = float(self.textbox_visualization_max_slice.text())
         if self.data_view.display_ev:
-            self.data_view.visualization_min_slice =1599 - analysis.ev_to_slice(max_slice, self.xdata)
+            self.data_view.visualization_min_slice =self.number_of_slices - 1 - analysis.ev_to_slice(min_slice, self.xdata)
             print "min slice is:", self.data_view.visualization_min_slice
-            self.data_view.visualization_max_slice =1599 - analysis.ev_to_slice(min_slice, self.xdata)
+            self.data_view.visualization_max_slice =self.number_of_slices - 1 - analysis.ev_to_slice(max_slice, self.xdata)
             print "max slice is:", self.data_view.visualization_max_slice
         else:
-            self.data_view.visualization_min_slice = 1599 - analysis.wavelength_to_slice(min_slice, self.xdata)
-            self.data_view.visualization_max_slice = 1599 -analysis.wavelength_to_slice(max_slice, self.xdata)
+            self.data_view.visualization_min_slice = self.number_of_slices - 1 - analysis.wavelength_to_slice(min_slice, self.xdata)
+            self.data_view.visualization_max_slice = self.number_of_slices - 1 -analysis.wavelength_to_slice(max_slice, self.xdata)
             print "min slice is:", self.data_view.visualization_min_slice
             print "max slice is:", self.data_view.visualization_max_slice
 

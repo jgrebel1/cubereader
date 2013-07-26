@@ -14,14 +14,14 @@ def change_display(axes, ycube, xdata, data_view):
     """
     axes.cla()
     if data_view.display_ev:
-        img2, = axes.plot(1240/xdata[...],
+        img2, = axes.plot(1240/xdata,
                           ycube[data_view.ycoordinate,
                                 data_view.xcoordinate,:],
                           '.')
         axes.set_xlabel('ev')
         
     else:
-        img2, = axes.plot(xdata[...],
+        img2, = axes.plot(xdata,
                           ycube[data_view.ycoordinate,
                                 data_view.xcoordinate,:],
                                   '.')       
@@ -33,7 +33,7 @@ def initialize_graph(axes, ycube, xdata, maxval):
     initializes the graph on screen
     xcoordinates and ycoordinates start from 0        
     """
-    img2, = axes.plot(xdata[...], ycube[0,0,:],'.')
+    img2, = axes.plot(xdata, ycube[0,0,:],'.')
     plt.ylim(ymin=-maxval/10, ymax=maxval)
     plt.xlabel('$\lambda$ [nm]')
     return img2

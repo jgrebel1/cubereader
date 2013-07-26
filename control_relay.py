@@ -84,7 +84,7 @@ class ControlRelay(QtCore.QObject):
         if self.current_tab.data_view.display_ev:
             imageval = analysis.ev_to_slice(slice_input, 
                                             self.current_tab.xdata) 
-            self.current_tab.slider.setValue(1599 - imageval) 
+            self.current_tab.slider.setValue(self.tab.number_of_slices - 1 - imageval) 
         else:      
             imageval = analysis.wavelength_to_slice(slice_input, 
                                                     self.current_tab.xdata)
@@ -136,6 +136,6 @@ class Communicate(QtCore.QObject):
     maxcolor_sig = QtCore.Signal() 
     mincolor_sig = QtCore.Signal() 
     imageslice_sig = QtCore.Signal() 
-    imageslice_ev_sig = QtCore.Signal()
+    imageslice_sig = QtCore.Signal()
     graphslicex_sig = QtCore.Signal() 
     graphslicey_sig = QtCore.Signal()    

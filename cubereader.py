@@ -29,7 +29,7 @@ class AppForm(QtGui.QMainWindow):
     """Gui Application to display Data Cube"""
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
-        self.setWindowTitle('Mf1 File Reader')
+        self.setWindowTitle('Cube Reader')
         
         self.create_menu()
         self.create_main_window()
@@ -63,8 +63,8 @@ class AppForm(QtGui.QMainWindow):
                                          shortcut="Ctrl+N",
                                          tip="Open a New HDF5 File"
                                          )
-        convert_action = menu_tools.create_action(self, "&Convert MF1",
-                                            slot=convert_file.convert_mf1,
+        convert_action = menu_tools.create_action(self, "&Convert File",
+                                            slot=convert_file.ConvertToCubeReader,
                                             shortcut="Ctrl+A",
                                             tip="Convert an Mf1 file to HDF5")
         quit_action = menu_tools.create_action(self, "&Quit", slot=self.close, 
@@ -108,14 +108,7 @@ class AppForm(QtGui.QMainWindow):
             filenames = dialog.selectedFiles()
         for filename in filenames:
             if filename:
-                basename = analysis.get_file_basename(filename)            
-                with open(filename,'rb') as f: 
-                    #generates a new variable for each file to hold
-                    #the header window.
-                    #I need to find a better way to do this
-                    #exec("self.%s = header.HeaderWindow(basename, f.read(2048))"%(basename+'_header'))
-                    self.header_window = header.HeaderWindow(basename, 
-                                                             f.read(2048))
+                basename = analysis.get_file_basename(filename)   
                 newtab = tab.Tab(filename)         
                 newtab.setWindowTitle('%s' %basename)
                 self.tab.addTab(newtab, '%s' %basename)

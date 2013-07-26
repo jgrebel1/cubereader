@@ -7,28 +7,32 @@ Created on Fri Jun 21 13:23:38 2013
 import os
 import numpy as np
 import h5py
+import shutil
 
 
-class Mf1File():
+class Mf1Converter():
     """
     Reads the Mf1 File and builds a Data Cube from the intensities,
     xdata (wavelengths) for graph and optionally info for comments.
     """
     
-    def __init__(self, filename, hdf5_filename, dimension1, dimension2, 
+    def __init__(self, input_filename, output_filename, dimension1, dimension2, 
                  global_bool):
-        self.filename = filename
-        self.hdf5_filename = hdf5_filename
+        self.input_filename = input_filename
+        self.output_filename = output_filename
         self.dimension1 = dimension1
         self.dimension2 = dimension2
         self.global_bool = global_bool
 
         #read the file
         self.datasize = self.datasize_finder()
-        
-        with open(self.filename,'rb') as fid:
+        self.output_file = h5py.File(self.output_filename,'w')
+        experiments = self.output_file.create_group("Experiments") 
+        self.data_holder = experiments.create_group("__unnamed__")
+        with open(self.input_filename,'rb') as fid:
             self.text_header=fid.read(2048)
-            self.data = h5py.File(self.hdf5_filename,'w', userblock_size=2048)
+            self.temporary = h5py.File(self.output_filename+'temporary',
+                                       'w')
             self.read_into_cube(fid)
         #if not self.check_dimensions():
             #self.fix_dimensions()
@@ -36,13 +40,15 @@ class Mf1File():
         self.build_xdata()
         #self.info = self.build_info()
         self.build_ycube()
-        
-        self.data.close()
-        self.write_header()        
+        self.write_header()            
+        self.output_file.close()
+        self.temporary.close()
+        os.remove(self.output_filename+'temporary')
+   
         
     def datasize_finder(self):
         'finds the data size in the mf1 file'
-        fileinfo=os.stat(self.filename)
+        fileinfo=os.stat(self.input_filename)
         #subtract header size from total data size and divide by size of 
         #spectrum and comments
         if self.global_bool:
@@ -64,10 +70,10 @@ class Mf1File():
         builds the wavelength data (x data for graph). 
         """
         if self.global_bool:
-            self.xdata = self.data.create_dataset('xdata', data=self.xdata ) 
+            self.xdata = self.data_holder.create_dataset('xdata', data=self.xdata ) 
         else:
-            self.xdata = self.data.create_dataset('xdata',
-                                                  data=self.data["cube"][0,0,0:1600])
+            self.xdata = self.data_holder.create_dataset('xdata',
+                                                  data=self.temporary["cube"][0,0,0:1600])
         
     def build_ycube(self):
         """
@@ -75,11 +81,11 @@ class Mf1File():
         """
 
         if self.global_bool:
-            self.ycube = self.data.create_dataset('ycube',
-                                                  data=self.data["cube"][:,:,0:1600])
+            self.ycube = self.data_holder.create_dataset('data',
+                                                  data=self.temporary["cube"][:,:,0:1600])
         else:
-            self.ycube = self.data.create_dataset('ycube', 
-                                                  data=self.data["cube"][:,:,1600:3200])
+            self.ycube = self.data_holder.create_dataset('data', 
+                                                  data=self.temporary["cube"][:,:,1600:3200])
 
         
     def build_info(self):
@@ -99,9 +105,9 @@ class Mf1File():
 
         
         if self.global_bool:
-            cube = self.data.create_dataset('cube',
-                                            (self.dimension1,
-                                             self.dimension2, 1664))
+            cube = self.temporary.create_dataset('cube',
+                                                 (self.dimension1,
+                                                  self.dimension2, 1664))
 
             self.xdata = np.fromfile(file=fid, dtype='>f', count=1600)
             
@@ -112,7 +118,7 @@ class Mf1File():
                     except:
                         return
         else:
-            cube = self.data.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
+            cube = self.temporary.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
             for i in np.arange(self.dimension1):
                 for j in np.arange(self.dimension2):
                     try:
@@ -120,11 +126,5 @@ class Mf1File():
                     except:
                         return
     def write_header(self):
-        """
-        HDF5 only supports writing the userblock after you close a file.
-        this writes in the header from the mf1 file to the new HDF5 file.
-        """
-        f = file(self.hdf5_filename, 'r+b')
-        f.seek(0,0)
-        f.write(self.text_header)
-        f.close()
+        self.data_holder.attrs['header'] = self.text_header
+        

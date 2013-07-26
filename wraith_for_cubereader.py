@@ -28,6 +28,8 @@ from matplotlib.figure import Figure
 #import pylab, which includes scipy and numpy
 from pylab import *
 
+from scipy import integrate
+
 #### import project specific items ####
 
 #spectra fitting toolkit
@@ -42,6 +44,7 @@ from wraith.data_formats import *
 #custom gui elements to adjust and display fitting parameters
 from wraith.parameter_gui import *
 from wraith.optimization_gui import *
+
 
 #Main window to control plotting
 class Form(QMainWindow):
@@ -367,7 +370,6 @@ class Form(QMainWindow):
                 peak_list = self.files[filename].get_spectrum(row).peaks.peak_list
                 for peak in peak_list:
                     peak_identifier = str(peak)
-                    #self.peak_bank.peaks[peak_identifier] = peak.get_spec()
                     self.peak_bank.table.setRowCount(i+1)
                     self.peak_bank.table.setItem(i,0, QtGui.QTableWidgetItem(str(peak.get_spec())))
                     i += 1
@@ -376,28 +378,34 @@ class Form(QMainWindow):
     def clear_peak_bank(self):
         for table_row in np.arange(self.peak_bank.table.rowCount()):
             self.peak_bank.table.removeRow(0)
+    
+    def fit_from_peak_bank(self, spectrum):
+        for table_row in np.arange(self.peak_bank.table.rowCount()):
+            peak = self.peak_bank.table.item(table_row,0).text()
+            peak = eval(peak)
+            name = peak['name']
+            function = peak['function']
+            penalty_function = peak['penalty_function']
+            variables = peak['variables']
+            values = copy(peak['values'])
+            ranges = copy(peak['ranges'])
 
-    def fit_from_peak_bank(self):
+            spectrum.guess_peak(name, variables, 
+                                values, ranges,
+                                eval(function), eval(penalty_function))
+    def fit_window_from_peak_bank(self):
         for file in range(self.series_list_root.rowCount()):
           for row in range(self.series_list_root.child(file).rowCount()):
             model_index = self.series_list_root.child(file).child(row).index()
             checked = self.series_list_model.data(model_index, Qt.CheckStateRole) == (Qt.Checked)
             if checked:
                 filename = self.series_list_root.child(file).text()
-                for table_row in np.arange(self.peak_bank.table.rowCount()):
-                    peak = self.peak_bank.table.item(table_row,0).text()
-                    peak = eval(peak)
-                    name = peak['name']
-                    function = peak['function']
-                    penalty_function = peak['penalty_function']
-                    variables = peak['variables']
-                    values = copy(peak['values'])
-                    ranges = copy(peak['ranges'])
-                    spectrum = self.files[filename].get_spectrum(row)
-                    spectrum.guess_peak(name, variables, values, ranges, eval(function), eval(penalty_function))
+                spectrum = self.files[filename].get_spectrum(row)
+                self.fit_from_peak_bank(spectrum)
         self.on_show()
     
     def fit_cube_from_peak_bank(self):
+        self.peak_bank.empty_cube_box()
         (rows,columns,slices) = np.shape(self.ycube[...])
         for i in np.arange(rows):
             for j in np.arange(columns):
@@ -406,28 +414,19 @@ class Form(QMainWindow):
                                                self.ycube[i,j,:],
                                                j,
                                                i)                    
-                for table_row in np.arange(self.peak_bank.table.rowCount()):
-                    peak = self.peak_bank.table.item(table_row,0).text()
-                    peak = eval(peak)
-                    name = peak['name']
-                    function = peak['function']
-                    penalty_function = peak['penalty_function']
-                    variables = peak['variables']
-                    values = copy(peak['values'])
-                    ranges = copy(peak['ranges'])
-                    spectrum = peak_holder.get_spectrum(0)
-                    spectrum.guess_peak(name, variables, 
-                                        values, ranges,
-                                        eval(function), eval(penalty_function))
-                peak_list = peak_holder.get_spectrum(0).peaks.peak_list
+                spectrum = peak_holder.get_spectrum(0)
+                self.fit_from_peak_bank(spectrum)                
                 spectrum_peaks = []
-                for peak in peak_list:
+                for peak in spectrum.peaks.peak_list:
                     spectrum_peaks.append(peak.get_spec())
-                location = "%s"%"x"+str(j)+"y"+str(i)
                 self.peak_bank.cube_peaks.append(spectrum_peaks)
+                integrated_residuals = integrate.simps(spectrum.residuals())
+                self.peak_bank.cube_residuals.append(integrated_residuals)
+        self.peak_bank.notify_cube_fitted()
     
     def show_peak_bank(self):
         self.peak_bank.show()
+        
     
     def plot_summary_csv(self):
         pass
@@ -693,14 +692,14 @@ class Form(QMainWindow):
         self.button_write_summary.clicked.connect(self.write_summary_csv)
         self.button_write_summary.setShortcut("Ctrl+E")
         
-        self.button_fill_peak_bank = QPushButton("&Add to Peak Bank")
+        self.button_fill_peak_bank = QPushButton("&Fill Peak Bank")
         self.button_fill_peak_bank.clicked.connect(self.fill_peak_bank)
         
         self.button_clear_peak_bank = QPushButton("Clear Peak Bank")
         self.button_clear_peak_bank.clicked.connect(self.clear_peak_bank)
 
-        self.button_fit_from_peak_bank = QPushButton("&Fit From Peak Bank")
-        self.button_fit_from_peak_bank.clicked.connect(self.fit_from_peak_bank)
+        self.button_fit_window_from_peak_bank = QPushButton("&Fit Window From Peak Bank")
+        self.button_fit_window_from_peak_bank.clicked.connect(self.fit_window_from_peak_bank)
         
         self.button_show_peak_bank = QPushButton("&Show Peak Bank")
         self.button_show_peak_bank.clicked.connect(self.show_peak_bank)
@@ -719,7 +718,7 @@ class Form(QMainWindow):
         mods_box.addWidget(self.button_write_summary,3,1)
         mods_box.addWidget(self.button_fill_peak_bank,4,0)
         mods_box.addWidget(self.button_clear_peak_bank,4,1)
-        mods_box.addWidget(self.button_fit_from_peak_bank,4,2)
+        mods_box.addWidget(self.button_fit_window_from_peak_bank,4,2)
         mods_box.addWidget(self.button_show_peak_bank,5,0)
         mods_box.addWidget(self.button_fit_cube_from_peak_bank,5,1)
 

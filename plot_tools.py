@@ -8,67 +8,67 @@ import matplotlib
 from matplotlib import pyplot as plt
 
 
-def change_display(axes, ycube, xdata, data_view):
+def change_display(axes, data, data_view):
     """
     changes the view between ev and wavelength
     """
     axes.cla()
     if data_view.display_ev:
-        img2, = axes.plot(1240/xdata,
-                          ycube[data_view.ycoordinate,
+        img2, = axes.plot(1240/data.xdata,
+                          data.ycube[data_view.ycoordinate,
                                 data_view.xcoordinate,:],
                           '.')
         axes.set_xlabel('ev')
         
     else:
-        img2, = axes.plot(xdata,
-                          ycube[data_view.ycoordinate,
+        img2, = axes.plot(data.xdata,
+                          data.ycube[data_view.ycoordinate,
                                 data_view.xcoordinate,:],
                                   '.')       
         axes.set_xlabel('$\lambda$ [nm]')
     return img2
 
-def initialize_graph(axes, ycube, xdata, maxval):
+def initialize_graph(axes, data, maxval):
     """
     initializes the graph on screen
     xcoordinates and ycoordinates start from 0        
     """
-    img2, = axes.plot(xdata, ycube[0,0,:],'.')
+    img2, = axes.plot(data.xdata, data.ycube[0,0,:],'.')
     plt.ylim(ymin=-maxval/10, ymax=maxval)
     plt.xlabel('$\lambda$ [nm]')
     return img2
 
-def initialize_image(axes, ycube, xdata, slice1, maxval):
+def initialize_image(axes, data, slice1, maxval):
     'Initializes the image from the datacube'
    
-    slicedata = ycube[:,:,slice1]
+    slicedata = data.ycube[:,:,slice1]
     img = axes.imshow(slicedata, interpolation='nearest',
                           clim = (0,maxval))
 
     axes.set_title('Current Slice Wavelength:%0.0f '
-                       %float(xdata[slice1]))
+                       %float(data.xdata[slice1]))
     plt.yticks([])
     plt.xticks([]) 
     return img
     
-def plot_graph(img, axes, ycube, xdata, data_view):
+def plot_graph(img, axes, data, data_view):
     """updates the graph on screen with the given x and y coordinates"""
-    img.set_ydata(ycube[data_view.ycoordinate, data_view.xcoordinate,:])
+    img.set_ydata(data.ycube[data_view.ycoordinate, data_view.xcoordinate,:])
     img.figure.canvas.draw()
     
-def plot_image(img, axes, ycube, xdata, data_view):
+def plot_image(img, axes, data, data_view):
     """updates the image on screen with a new cube slice from slider"""
     slice1 = data_view.slider_val
-    slicedata = ycube[:,:,slice1]
+    slicedata = data.ycube[:,:,slice1]
     img.set_array(slicedata)
     img.set_clim(vmax=data_view.currentmaxvalcolor,
                  vmin=data_view.currentminvalcolor)    
     if data_view.display_ev:
         axes.set_title('Current Slice ev:%0.2f'
-                            %float(1240/xdata[slice1]))
+                            %float(1240/data.xdata[slice1]))
     else:
         axes.set_title('Current Slice Wavelength:%0.0f '
-                          %float(xdata[slice1]))
+                          %float(data.xdata[slice1]))
     img.figure.canvas.draw()
      
         

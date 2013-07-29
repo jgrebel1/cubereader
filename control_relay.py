@@ -56,8 +56,7 @@ class ControlRelay(QtCore.QObject):
         self.current_tab.data_view.xcoordinate = int(self.window.graphslicex.text())
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
-                              self.current_tab.ycube,
-                              self.current_tab.xdata,
+                              self.current_tab.data,
                               self.current_tab.data_view)
 
             
@@ -69,8 +68,7 @@ class ControlRelay(QtCore.QObject):
         self.current_tab.data_view.ycoordinate = int(self.window.graphslicey.text())
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
-                              self.current_tab.ycube,
-                              self.current_tab.xdata,
+                              self.current_tab.data,
                               self.current_tab.data_view)   
 
 
@@ -83,11 +81,11 @@ class ControlRelay(QtCore.QObject):
         slice_input = float(self.window.imageslice.text())
         if self.current_tab.data_view.display_ev:
             imageval = analysis.ev_to_slice(slice_input, 
-                                            self.current_tab.xdata) 
-            self.current_tab.slider.setValue(self.tab.number_of_slices - 1 - imageval) 
+                                            self.current_tab.data) 
+            self.current_tab.slider.setValue(self.current_tab.number_of_slices - 1 - imageval) 
         else:      
             imageval = analysis.wavelength_to_slice(slice_input, 
-                                                    self.current_tab.xdata)
+                                                    self.current_tab.data)
             self.current_tab.slider.setValue(imageval) 
 
     def update_maxcolor_from_control(self):
@@ -98,8 +96,7 @@ class ControlRelay(QtCore.QObject):
         self.current_tab.data_view.currentmaxvalcolor = int(self.window.maxcolor.text())
         plot_tools.plot_image(self.current_tab.img,
                               self.current_tab.img_axes,
-                              self.current_tab.ycube,
-                              self.current_tab.xdata,
+                              self.current_tab.data,
                               self.current_tab.data_view)  
 
     def update_mincolor_from_control(self):
@@ -110,8 +107,7 @@ class ControlRelay(QtCore.QObject):
         self.current_tab.data_view.currentminvalcolor = int(self.window.mincolor.text())
         plot_tools.plot_image(self.current_tab.img,
                               self.current_tab.img_axes,
-                              self.current_tab.ycube,
-                              self.current_tab.xdata,
+                              self.current_tab.data,
                               self.current_tab.data_view)  
               
     def update_values(self):

@@ -49,14 +49,14 @@ from wraith.optimization_gui import *
 #Main window to control plotting
 class Form(QMainWindow):
     def __init__(self,filename, xdata, ydata, xcoordinate, ycoordinate,
-                 peak_bank, ycube, parent=None):
+                 spectrum_holder, ycube, parent=None):
         super(Form, self).__init__(parent)
         self.filename = filename
         self.xdata = xdata
         self.ydata = ydata
         self.xcoordinate = xcoordinate
         self.ycoordinate = ycoordinate
-        self.peak_bank = peak_bank
+        self.spectrum_holder = spectrum_holder
         self.ycube = ycube
         self.setWindowTitle('Interactive XPS Explorer')
         self.ignore_signals = False
@@ -73,6 +73,8 @@ class Form(QMainWindow):
         
         self.load_file()
         self.update_file_checks(self.series_list_model.item(0))
+        
+        self.threadPool = []
         
         self.update_ui()
         self.on_show()
@@ -359,41 +361,26 @@ class Form(QMainWindow):
             #f.close()
             savetxt(str(outfilename), out, delimiter=",", fmt="%10.5f")
 
-    def fill_peak_bank(self):
-        i = 0
+    def fill_spectrum_holder(self):
         for file in range(self.series_list_root.rowCount()):
           for row in range(self.series_list_root.child(file).rowCount()):
             model_index = self.series_list_root.child(file).child(row).index()
             checked = self.series_list_model.data(model_index, Qt.CheckStateRole) == (Qt.Checked)
             if checked:
                 filename = self.series_list_root.child(file).text()
-                peak_list = self.files[filename].get_spectrum(row).peaks.peak_list
-                for peak in peak_list:
-                    peak_identifier = str(peak)
-                    self.peak_bank.table.setRowCount(i+1)
-                    self.peak_bank.table.setItem(i,0, QtGui.QTableWidgetItem(str(peak.get_spec())))
-                    i += 1
+                spectra_specifications = self.files[filename].get_spectrum(row).get_spec()
+                self.spectrum_holder.textbox_spectrum_box.setText(pformat(spectra_specifications, width = 20))
         self.on_show()
         
-    def clear_peak_bank(self):
-        for table_row in np.arange(self.peak_bank.table.rowCount()):
-            self.peak_bank.table.removeRow(0)
+    def clear_spectrum_holder(self):
+        self.spectrum_holder.empty_spectrum_box()
     
-    def fit_from_peak_bank(self, spectrum):
-        for table_row in np.arange(self.peak_bank.table.rowCount()):
-            peak = self.peak_bank.table.item(table_row,0).text()
-            peak = eval(peak)
-            name = peak['name']
-            function = peak['function']
-            penalty_function = peak['penalty_function']
-            variables = peak['variables']
-            values = copy(peak['values'])
-            ranges = copy(peak['ranges'])
-
-            spectrum.guess_peak(name, variables, 
-                                values, ranges,
-                                eval(function), eval(penalty_function))
-    def fit_window_from_peak_bank(self):
+    def fit_from_spectrum_holder(self, spectrum):
+        specifications = eval(self.spectrum_holder.spectrum_box)
+        spectrum.set_spec(specifications)
+        spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
+        
+    def fit_window_from_spectrum_holder(self):
         for file in range(self.series_list_root.rowCount()):
           for row in range(self.series_list_root.child(file).rowCount()):
             model_index = self.series_list_root.child(file).child(row).index()
@@ -401,12 +388,21 @@ class Form(QMainWindow):
             if checked:
                 filename = self.series_list_root.child(file).text()
                 spectrum = self.files[filename].get_spectrum(row)
-                self.fit_from_peak_bank(spectrum)
+                self.fit_from_spectrum_holder(spectrum)
         self.on_show()
-    
-    def fit_cube_from_peak_bank(self):
-        self.peak_bank.empty_cube_box()
+        
+    def fit_cube_from_spectrum_holder(self):
+        self.threadPool.append( GenericThread(self.fit_cube_from_spectrum_holder_process))
         (rows,columns,slices) = np.shape(self.ycube[...])
+        self.progress_bar = self.fit_cube_progress_bar(rows*columns)
+        self.threadPool[len(self.threadPool)-1].start()
+    
+    def fit_cube_from_spectrum_holder_process(self):
+        self.spectrum_holder.notify_cube_fitting()
+        (rows,columns,slices) = np.shape(self.ycube[...])
+
+        value = 0
+        self.stop_fit = False
         for i in np.arange(rows):
             for j in np.arange(columns):
                 peak_holder = DataHolder()
@@ -415,17 +411,45 @@ class Form(QMainWindow):
                                                j,
                                                i)                    
                 spectrum = peak_holder.get_spectrum(0)
-                self.fit_from_peak_bank(spectrum)                
+                self.fit_from_spectrum_holder(spectrum)                
                 spectrum_peaks = []
                 for peak in spectrum.peaks.peak_list:
                     spectrum_peaks.append(peak.get_spec())
-                self.peak_bank.cube_peaks.append(spectrum_peaks)
+                self.spectrum_holder.cube_peaks.append(spectrum_peaks)
                 integrated_residuals = integrate.simps(spectrum.residuals())
-                self.peak_bank.cube_residuals.append(integrated_residuals)
-        self.peak_bank.notify_cube_fitted()
+                self.spectrum_holder.cube_residuals.append(integrated_residuals)
+                if self.stop_fit is True:
+                    return
+                value += 1
+                self.update_progress(value)  
+        self.progress_window.close()
+        self.spectrum_holder.notify_cube_fitted()
+        
+    def fit_cube_progress_bar(self, pixels):
+        self.progress_window = QtGui.QWidget()
+        self.progress_window.setWindowTitle("Cube Fit Progress")
+        progress_bar = QtGui.QProgressBar()
+        button_stop_fit = QtGui.QPushButton("&Stop Fit")
+        button_stop_fit.clicked.connect(self.stop_fit_now)
+        
+        progress_bar.setMaximum(pixels)
+        box = QtGui.QVBoxLayout()
+        box.addWidget(progress_bar)
+        box.addWidget(button_stop_fit)
+        self.progress_window.setLayout(box)
+        self.progress_window.show()
+        return progress_bar
+        
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
     
-    def show_peak_bank(self):
-        self.peak_bank.show()
+    def stop_fit_now(self):
+        self.stop_fit = True
+        self.progress_window.close()
+        
+    
+    def show_spectrum_holder(self):
+        self.spectrum_holder.show()
         
     
     def plot_summary_csv(self):
@@ -692,20 +716,20 @@ class Form(QMainWindow):
         self.button_write_summary.clicked.connect(self.write_summary_csv)
         self.button_write_summary.setShortcut("Ctrl+E")
         
-        self.button_fill_peak_bank = QPushButton("&Fill Peak Bank")
-        self.button_fill_peak_bank.clicked.connect(self.fill_peak_bank)
+        self.button_fill_spectrum_holder = QPushButton("&Fill Spectrum Holder")
+        self.button_fill_spectrum_holder.clicked.connect(self.fill_spectrum_holder)
         
-        self.button_clear_peak_bank = QPushButton("Clear Peak Bank")
-        self.button_clear_peak_bank.clicked.connect(self.clear_peak_bank)
+        self.button_clear_spectrum_holder = QPushButton("Clear Spectrum Holder")
+        self.button_clear_spectrum holder.clicked.connect(self.clear_spectrum_holder)
 
-        self.button_fit_window_from_peak_bank = QPushButton("&Fit Window From Peak Bank")
-        self.button_fit_window_from_peak_bank.clicked.connect(self.fit_window_from_peak_bank)
+        self.button_fit_window_from_spectrum_holder = QPushButton("&Fit Window From Spectrum Holder")
+        self.button_fit_window_from_spectrum_holder.clicked.connect(self.fit_window_from_spectrum_holder)
         
-        self.button_show_peak_bank = QPushButton("&Show Peak Bank")
-        self.button_show_peak_bank.clicked.connect(self.show_peak_bank)
+        self.button_show_spectrum_holder = QPushButton("&Show Spectrum Holder")
+        self.button_show_spectrum_holder.clicked.connect(self.show_spectrum_holder)
         
-        self.button_fit_cube_from_peak_bank = QPushButton("&Fit Cube From Peak Bank")
-        self.button_fit_cube_from_peak_bank.clicked.connect(self.fit_cube_from_peak_bank)
+        self.button_fit_cube_from_spectrum_holder = QPushButton("&Fit Cube From Spectrum Holder")
+        self.button_fit_cube_from_spectrum_holder.clicked.connect(self.fit_cube_from_spectrum_holder)
 
         #action buttons layout
         mods_box = QGridLayout()
@@ -716,11 +740,11 @@ class Form(QMainWindow):
         mods_box.addWidget(self.button_write_fits,1,1)
         mods_box.addWidget(self.button_load_fits,1,2)
         mods_box.addWidget(self.button_write_summary,3,1)
-        mods_box.addWidget(self.button_fill_peak_bank,4,0)
-        mods_box.addWidget(self.button_clear_peak_bank,4,1)
-        mods_box.addWidget(self.button_fit_window_from_peak_bank,4,2)
-        mods_box.addWidget(self.button_show_peak_bank,5,0)
-        mods_box.addWidget(self.button_fit_cube_from_peak_bank,5,1)
+        mods_box.addWidget(self.button_fill_spectrum_holder,4,0)
+        mods_box.addWidget(self.button_clear_spectrum_holder,4,1)
+        mods_box.addWidget(self.button_fit_window_from_spectrum_holder,4,2)
+        mods_box.addWidget(self.button_show_spectrum_holder,5,0)
+        mods_box.addWidget(self.button_fit_cube_from_spectrum_holder,5,1)
 
         left_vbox = QVBoxLayout()
         left_vbox.addWidget(self.canvas)
@@ -932,6 +956,20 @@ class DataHolder(object):
 
     def get_spectrum(self, index):
         return self.spectra[index]
+        
+class GenericThread(QtCore.QThread):
+    def __init__(self, function, *args, **kwargs):
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.function(*self.args,**self.kwargs)
+        return
 
 #main function to start up program
 def main():
@@ -952,6 +990,8 @@ def wraith():
     QApplication.setPalette(QApplication.style().standardPalette())
     app.form.show()
     #app.exec_()
+    
+
 
 
 #if run from commandline then start up by calling main()

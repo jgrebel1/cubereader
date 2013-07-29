@@ -47,10 +47,14 @@ class Spectrum:
 
   def set_spec(self, spec):
     self.clear_abg()
-    self.bg = Background(self)
+    self.bg = Background(self)    
     self.peaks = Peaks(self)
     self.offset = spec['offset']
-    self.bg.set_spec(spec['bg'])
+    try:
+
+        self.bg.set_spec(spec['bg'])
+    except :
+        pass
     self.peaks.set_spec(spec['peaks'])
  
   def E(self):
@@ -299,26 +303,31 @@ class Spectrum:
 
     if displayParams:
       if isinstance(self.bg, Background):
-        spec = self.bg.get_spec()
-        label = spec['name'] + "\n"
-        label += spec['function']
-        for var, val, range in zip(spec['variables'], spec['values'], spec['ranges']):
-          label += "\n$%s = %0.2f\in\, (%0.2f,%0.2f)$"%(var,val,range[0],range[1])
-        label += ""
-        mu = self.E()[0]
-        A = self.bg(self.E(),self.data)[0]
-        EE = self.E()[::-1]
-        col = self.bg.line.get_color()
-        an = axes.annotate(label,
-                      xy=(mu, A), xycoords='data',
-                      xytext=(0,60), textcoords='offset points',
-                      arrowprops=dict(arrowstyle='fancy',connectionstyle="arc3,rad=0.0",fc='%s'%col,alpha=0.6),
-                      bbox=dict(boxstyle="roundtooth",fc='%s'%col,alpha=0.2),
-                      fontsize='small',
-                      family='sans-serif')
-        an.set_picker(True)
-        #an.draggable()
-        an.fit_object = self.bg
+        try:
+            spec = self.bg.get_spec()
+            label = spec['name'] + "\n"
+            label += spec['function']
+            for var, val, range in zip(spec['variables'], spec['values'], spec['ranges']):
+              label += "\n$%s = %0.2f\in\, (%0.2f,%0.2f)$"%(var,val,range[0],range[1])
+            label += ""
+            mu = self.E()[0]
+            A = self.bg(self.E(),self.data)[0]
+            EE = self.E()[::-1]
+            col = self.bg.line.get_color()
+            an = axes.annotate(label,
+                          xy=(mu, A), xycoords='data',
+                          xytext=(0,60), textcoords='offset points',
+                          arrowprops=dict(arrowstyle='fancy',connectionstyle="arc3,rad=0.0",fc='%s'%col,alpha=0.6),
+                          bbox=dict(boxstyle="roundtooth",fc='%s'%col,alpha=0.2),
+                          fontsize='small',
+                          family='sans-serif')
+            an.set_picker(True)
+            #an.draggable()
+            an.fit_object = self.bg
+        except:
+            pass
+
+
         
       for peak in self.peaks:
         spec = peak.get_spec()

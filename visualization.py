@@ -19,9 +19,9 @@ class Visualization(HasTraits):
 
     @on_trait_change('scene.activated')
     def update_plot(self):
-        self.scene.mlab.pipeline.volume(self.scene.mlab.pipeline.scalar_field(self.ycube[:,:,:]), 
-                                        vmin=self.visualization_min_color,
-                                        vmax=self.visualization_max_color)
+        #self.scene.mlab.pipeline.volume(self.scene.mlab.pipeline.scalar_field(self.ycube[:,:,:]), 
+                                        #vmin=self.visualization_min_color,
+                                        #vmax=self.visualization_max_color)
         #mlab.pipeline.image_plane_widget(mlab.pipeline.scalar_field(s),
                                          #plane_orientation='x_axes',
                                          #slice_index=10, vmin=100, vmax=800)

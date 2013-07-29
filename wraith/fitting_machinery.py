@@ -201,7 +201,7 @@ class Peaks:
 
   def set_spec(self,spec):
     for key,val in spec.items():
-      self.peak_list.append(Peak())
+      self.peak_list.append(Peak(self.spectrum))
       self.peak_list[-1].set_spec(val)
 
   def get_spec(self):

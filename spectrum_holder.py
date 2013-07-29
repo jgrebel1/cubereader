@@ -16,15 +16,17 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 
 
-class PeakBank(QtGui.QDialog):
+class SpectrumHolder(QtGui.QDialog):
     """
     Holds peaks 
     """
     def __init__(self, basename, dimension1, dimension2):
-        super(PeakBank, self).__init__()
-        self.setWindowTitle('PeakBank for %s'%basename)
+        super(SpectrumHolder, self).__init__()
+        self.setWindowTitle('Spectrum Holder for %s'%basename)
+        self.resize(600,300)
         self.dimension1 = dimension1
         self.dimension2 = dimension2
+        self.spectrum_box = ''
         self.cube_peaks = []
         self.amplitudes = []
         self.sigma = []
@@ -38,16 +40,19 @@ class PeakBank(QtGui.QDialog):
         self.table = QtGui.QTableWidget()  
         self.table.setColumnCount(1)
         
-        self.button_remove_peak = QtGui.QPushButton("&Remove Peak")
-        self.button_remove_peak.clicked.connect(self.remove_peak)    
+        self.textbox_spectrum_box = QtGui.QTextEdit()
+        self.textbox_spectrum_box.textChanged.connect(self.update_spectrum_box)
+        
+        self.button_empty_spectrum_box = QtGui.QPushButton("&Empty Spectrum Box")
+        self.button_empty_spectrum_box.clicked.connect(self.empty_spectrum_box)    
        
         self.label_cube_fitted = QtGui.QLabel("Cube Box Empty")       
         
-        self.button_display_peak_amplitudes = QtGui.QPushButton("&Display 1st Peak Amplitudes")
+        self.button_display_peak_amplitudes = QtGui.QPushButton("&Display Peak Amplitudes")
         self.button_display_peak_amplitudes.clicked.connect(self.display_peak_amplitudes)
         
         
-        self.button_display_peak_sigma = QtGui.QPushButton("&Display 1st Peak Sigmas")
+        self.button_display_peak_sigma = QtGui.QPushButton("&Display Peak Sigmas")
         self.button_display_peak_sigma.clicked.connect(self.display_peak_sigma)
         
         self.button_display_cube_residuals = QtGui.QPushButton("&Display Cube Residuals")
@@ -56,8 +61,8 @@ class PeakBank(QtGui.QDialog):
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
         
-        grid.addWidget(self.table,0,0)  
-        grid.addWidget(self.button_remove_peak,1,0)
+        grid.addWidget(self.textbox_spectrum_box,0,0)  
+        grid.addWidget(self.button_empty_spectrum_box,1,0)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.label_cube_fitted)
@@ -83,9 +88,12 @@ class PeakBank(QtGui.QDialog):
         self.window_amplitude.fig = plt.figure(figsize=(8.0, 6.0))
         self.window_amplitude.canvas = FigureCanvas(self.window_amplitude.fig)
         self.window_amplitude.canvas.setParent(self.window_amplitude)
-        plt.subplot()
-        plt.imshow(self.amplitudes, interpolation='nearest')
-        plt.colorbar()
+        for i in np.arange(self.peak_count):
+
+            axes = plt.subplot(self.peak_count, 1, i)
+            axes.set_title("Peak Number %s"%str(i+1))            
+            plt.imshow(self.amplitudes[:,:,i], interpolation='nearest')
+            plt.colorbar()
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.window_amplitude.canvas)
         self.window_amplitude.setLayout(vbox)
@@ -102,9 +110,10 @@ class PeakBank(QtGui.QDialog):
         self.window_sigma.fig = plt.figure(figsize=(8.0, 6.0))
         self.window_sigma.canvas = FigureCanvas(self.window_sigma.fig)
         self.window_sigma.canvas.setParent(self.window_sigma)
-        plt.subplot()
-        plt.imshow(self.sigma, interpolation='nearest')
-        plt.colorbar()
+        for i in np.arange(self.peak_count):
+            plt.subplot(self.peak_count, 1, i)
+            plt.imshow(self.sigma[:,:,i], interpolation='nearest')
+            plt.colorbar()
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.window_sigma.canvas)
         self.window_sigma.setLayout(vbox)
@@ -130,14 +139,19 @@ class PeakBank(QtGui.QDialog):
 
         self.window_residuals.show()
      
-    def generate_amplitudes_picture(self):
+    def empty_spectrum_box(self):
+        if not self.textbox_spectrum_box.isReadOnly():
+            self.textbox_spectrum_box.clear()
+
+    def generate_amplitudes_picture(self):  
         for pixel in self.cube_peaks:
-            #for peak in pixel:
-            peak = pixel[0]
-            self.amplitudes.append(peak['values'][0])
+            for peak in pixel:
+                self.amplitudes.append(peak['values'][0])
+            
         self.amplitudes = np.reshape(self.amplitudes,
                                      (self.dimension1,
-                                     self.dimension2))
+                                      self.dimension2,
+                                      self.peak_count))
                                      
     def generate_residuals_picture(self):
         self.cube_residuals = np.reshape(self.cube_residuals,
@@ -146,31 +160,39 @@ class PeakBank(QtGui.QDialog):
     
     def generate_sigma_picture(self):
         for pixel in self.cube_peaks:
-            #for peak in pixel:
-            peak = pixel[0]
-            self.sigma.append(peak['values'][2])
+            for peak in pixel:
+                self.sigma.append(peak['values'][2])
+            
         self.sigma = np.reshape(self.sigma,
                                      (self.dimension1,
-                                     self.dimension2))
+                                      self.dimension2,
+                                      self.peak_count))
 
     def hide_window(self):
         self.hide()
     
     def notify_cube_fitted(self):
-        self.cube_fitted = True
         self.label_cube_fitted.setText("Cube Box Loaded")
+        for pixel in self.cube_peaks:
+            self.peak_count = 0            
+            for peak in pixel:
+                self.peak_count += 1
+            break
         self.generate_amplitudes_picture()
         self.generate_sigma_picture() 
         self.generate_residuals_picture()
-        
-    def remove_peak(self):
-        self.table.removeRow(self.table.currentRow())
+        self.cube_fitted = True
+        self.textbox_spectrum_box.setReadOnly(False)
+    
+    def notify_cube_fitting(self):
+        self.empty_cube_box()
+        self.textbox_spectrum_box.setReadOnly(True)
        
     def cube_warning(self):
         msg = """
         Cube not fitted yet. Fit a cube to display.
         """
-        QtGui.QMessageBox.about(self, "Peak Bank Message", msg.strip())
+        QtGui.QMessageBox.about(self, "Spectrum Holder Message", msg.strip())
     
     def empty_cube_box(self):
         self.cube_fitted = False
@@ -178,5 +200,8 @@ class PeakBank(QtGui.QDialog):
         self.cube_residuals = []
         self.amplitudes = []
         self.sigma = []
+        
+    def update_spectrum_box(self):
+        self.spectrum_box = self.textbox_spectrum_box.toPlainText()
         
         

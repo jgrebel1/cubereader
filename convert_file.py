@@ -19,6 +19,8 @@ import init_settings
 
 class ConvertToCubeReader():
     def __init__(self):
+        self.convert_mutex = QtCore.QMutex()
+        self.threadPool = []
         dialog = QtGui.QFileDialog()
         dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
         dialog.setNameFilter('MF1 (*.mf1);; All Files (*.*)')
@@ -45,12 +47,28 @@ class ConvertToCubeReader():
                 
                 
                 dimension1, dimension2, global_bool = self.get_initial_settings_for_mf1(default_values)
-                print('Saving file: %s'%full_basename)        
-                cube_loader.Mf1Converter(filename,output_filename,
-                                    dimension1, dimension2,
-                                    global_bool)
-    
-                print 'Conversion Complete'
+                print('Saving file: %s'%output_filename)
+                self.progress_bar = self.convert_progress_bar(dimension1*dimension2) 
+                
+                self.threadPool.append(GenericThread(cube_loader.Mf1Converter,
+                                                     filename, 
+                                                     output_filename,
+                                                     dimension1, 
+                                                     dimension2,
+                                                     global_bool,
+                                                     self.progress_bar))
+                
+                self.threadPool[len(self.threadPool)-1].start() 
+                
+                
+                #cube_loader.Mf1Converter(filename, 
+                                         #output_filename,
+                                         #dimension1, 
+                                         #dimension2,
+                                         #global_bool,
+                                         #self.progress_bar)
+                
+                #print 'Conversion Completed'
             else:
                 print 'No file selected'
                 
@@ -79,5 +97,42 @@ class ConvertToCubeReader():
         return (dimension1, dimension2, global_bool)
 
     def filterSelected(self, filter):
-        print 'test'
         self.filefilter = filter
+        
+    def convert_progress_bar(self, maximum):
+        """
+        progress bar window with stop button
+        """
+        self.progress_window = QtGui.QWidget()
+        self.progress_window.setWindowTitle("Conversion Progress")
+        progress_bar = QtGui.QProgressBar()
+        button_stop_rebin = QtGui.QPushButton("&Stop Conversion")
+        #button_stop_rebin.clicked.connect(self.stop_conversion_now)
+        progress_bar.setMaximum(maximum)
+        box = QtGui.QVBoxLayout()
+        box.addWidget(progress_bar)
+        box.addWidget(button_stop_rebin)
+        self.progress_window.setLayout(box)
+        self.progress_window.show()
+        return progress_bar
+    
+    def stop_conversion_now(self):
+        pass
+        
+    def update_progress(self, value):
+        #update less freqently if it slows down process
+        #if value%10 == 0:
+        self.progress_bar.setValue(value)     
+class GenericThread(QtCore.QThread):
+    def __init__(self, function, *args, **kwargs):
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.function(*self.args,**self.kwargs)
+        return

@@ -33,6 +33,8 @@ class SpectrumHolder(QtGui.QDialog):
         self.widths = []
         self.cube_residuals = []
         self.cube_fitted = False
+        self.cube_fitting = False
+        self.cube_mutex = QtCore.QMutex()
         self.inputs()
 
     def inputs(self):
@@ -74,7 +76,13 @@ class SpectrumHolder(QtGui.QDialog):
         
         
         self.setLayout(grid)
-    
+        
+    def cube_warning(self):
+        msg = """
+        Cube not fitted yet. Fit a cube to display.
+        """
+        QtGui.QMessageBox.about(self, "Spectrum Holder Message", msg.strip())
+        
     def display_window(self):
         self.show()
     
@@ -138,6 +146,14 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_residuals.setLayout(vbox)
 
         self.window_residuals.show()
+        
+    def empty_cube_box(self):
+        self.cube_fitted = False
+        self.cube_peaks = []
+        self.cube_residuals = []
+        self.amplitudes = []
+        self.sigma = []
+        
      
     def empty_spectrum_box(self):
         if not self.textbox_spectrum_box.isReadOnly():
@@ -182,26 +198,22 @@ class SpectrumHolder(QtGui.QDialog):
         self.generate_sigma_picture() 
         self.generate_residuals_picture()
         self.cube_fitted = True
+        self.cube_fitting = False
         self.textbox_spectrum_box.setReadOnly(False)
     
     def notify_cube_fitting(self):
         self.empty_cube_box()
         self.textbox_spectrum_box.setReadOnly(True)
+        self.cube_fitting = True
        
-    def cube_warning(self):
-        msg = """
-        Cube not fitted yet. Fit a cube to display.
-        """
-        QtGui.QMessageBox.about(self, "Spectrum Holder Message", msg.strip())
-    
-    def empty_cube_box(self):
+    def stop_fit(self):
         self.cube_fitted = False
-        self.cube_peaks = []
-        self.cube_residuals = []
-        self.amplitudes = []
-        self.sigma = []
-        
+        self.cube_fitting = False
+        self.textbox_spectrum_box.setReadOnly(False)
+
     def update_spectrum_box(self):
         self.spectrum_box = self.textbox_spectrum_box.toPlainText()
+        
+
         
         

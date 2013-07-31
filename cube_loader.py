@@ -17,13 +17,13 @@ class Mf1Converter():
     """
     
     def __init__(self, input_filename, output_filename, dimension1, dimension2, 
-                 global_bool):
+                 global_bool, progress_bar):
         self.input_filename = input_filename
         self.output_filename = output_filename
         self.dimension1 = dimension1
         self.dimension2 = dimension2
         self.global_bool = global_bool
-
+        self.progress_bar = progress_bar
         #read the file
         self.datasize = self.datasize_finder()
         self.output_file = h5py.File(self.output_filename,'w')
@@ -117,6 +117,8 @@ class Mf1Converter():
                         cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=1664)
                     except:
                         return
+                    current_spectrum = i*self.dimension2 + j
+                    self.progress_bar.setValue(current_spectrum)
         else:
             cube = self.temporary.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
             for i in np.arange(self.dimension1):
@@ -125,6 +127,8 @@ class Mf1Converter():
                         cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=3264)
                     except:
                         return
+                    current_spectrum = i*self.dimension2 + j
+                    self.progress_bar.setValue(current_spectrum)
     def write_header(self):
         self.data_holder.attrs['header'] = self.text_header
         

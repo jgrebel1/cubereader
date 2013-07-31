@@ -392,32 +392,45 @@ class Form(QMainWindow):
         self.on_show()
         
     def fit_cube_from_spectrum_holder(self):
+        if self.spectrum_holder.cube_fitting:
+            self.stop_fit = True
         self.threadPool.append( GenericThread(self.fit_cube_from_spectrum_holder_process))
         (rows,columns,slices) = np.shape(self.ycube[...])
         self.progress_bar = self.fit_cube_progress_bar(rows*columns)
         self.threadPool[len(self.threadPool)-1].start()
     
     def fit_cube_from_spectrum_holder_process(self):
+        locker = QtCore.QMutexLocker(self.spectrum_holder.cube_mutex)
         self.spectrum_holder.notify_cube_fitting()
         (rows,columns,slices) = np.shape(self.ycube[...])
 
         value = 0
         self.stop_fit = False
+        row_count=0
         for i in np.arange(rows):
+            column_count = 0
             for j in np.arange(columns):
                 peak_holder = DataHolder()
                 peak_holder.load_from_mf1_cube(self.xdata[:],
                                                self.ycube[i,j,:],
                                                j,
-                                               i)                    
-                spectrum = peak_holder.get_spectrum(0)
+                                               i)
+                if row_count==0:
+                    spectrum = peak_holder.get_spectrum(0)
+                    #print 'case1'
+                elif column_count==0:
+                    spectrum = self.spectrum_holder.cube_peaks[i*columns]
+                    #print 'case2'
+                else:
+                    spectrum = self.spectrum_holder.cube_peaks[-1]
+                    #print 'case3'
                 self.fit_from_spectrum_holder(spectrum)                
                 spectrum_peaks = []
                 for peak in spectrum.peaks.peak_list:
                     spectrum_peaks.append(peak.get_spec())
                 self.spectrum_holder.cube_peaks.append(spectrum_peaks)
-                integrated_residuals = integrate.simps(spectrum.residuals())
-                self.spectrum_holder.cube_residuals.append(integrated_residuals)
+                norm_int_res = self.get_normalized_integrated_residuals(spectrum)
+                self.spectrum_holder.cube_residuals.append(norm_int_res)
                 if self.stop_fit is True:
                     return
                 value += 1
@@ -445,7 +458,15 @@ class Form(QMainWindow):
     
     def stop_fit_now(self):
         self.stop_fit = True
+        self.spectrum_holder.stop_fit()
         self.progress_window.close()
+    
+    def get_normalized_integrated_residuals(self, spectrum):
+        integrated_data = integrate.simps(spectrum.data)
+        integrated_fit = integrate.simps(spectrum.peaks(spectrum.E()))
+        integrated_residuals = integrated_data - integrated_fit
+        norm_int_res = integrated_residuals/integrated_data
+        return norm_int_res
         
     
     def show_spectrum_holder(self):
@@ -716,19 +737,19 @@ class Form(QMainWindow):
         self.button_write_summary.clicked.connect(self.write_summary_csv)
         self.button_write_summary.setShortcut("Ctrl+E")
         
-        self.button_fill_spectrum_holder = QPushButton("&Fill Spectrum Holder")
+        self.button_fill_spectrum_holder = QPushButton("&Fill \n Spectrum Box")
         self.button_fill_spectrum_holder.clicked.connect(self.fill_spectrum_holder)
         
-        self.button_clear_spectrum_holder = QPushButton("Clear Spectrum Holder")
-        self.button_clear_spectrum holder.clicked.connect(self.clear_spectrum_holder)
+        self.button_clear_spectrum_holder = QPushButton("Empty \n Spectrum Box")
+        self.button_clear_spectrum_holder.clicked.connect(self.clear_spectrum_holder)
 
-        self.button_fit_window_from_spectrum_holder = QPushButton("&Fit Window From Spectrum Holder")
+        self.button_fit_window_from_spectrum_holder = QPushButton("&Fit Window From \n Spectrum Holder")
         self.button_fit_window_from_spectrum_holder.clicked.connect(self.fit_window_from_spectrum_holder)
         
-        self.button_show_spectrum_holder = QPushButton("&Show Spectrum Holder")
+        self.button_show_spectrum_holder = QPushButton("&Show \n Spectrum Holder")
         self.button_show_spectrum_holder.clicked.connect(self.show_spectrum_holder)
         
-        self.button_fit_cube_from_spectrum_holder = QPushButton("&Fit Cube From Spectrum Holder")
+        self.button_fit_cube_from_spectrum_holder = QPushButton("&Fit Cube From \n Spectrum Box")
         self.button_fit_cube_from_spectrum_holder.clicked.connect(self.fit_cube_from_spectrum_holder)
 
         #action buttons layout

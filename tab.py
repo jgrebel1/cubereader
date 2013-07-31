@@ -216,11 +216,9 @@ class Tab(QtGui.QWidget):
                                 self.data_view.ycoordinate)
         print 'Graph saved'  
         
-    def fit_all_from_spectrum_holder(self):
-        pass
                     
     def make_spectrum_holder(self):
-        self.spectrum_holder = spectrum_holder.PeakBank(self.basename, self.dimension1, self.dimension2)
+        self.spectrum_holder = spectrum_holder.SpectrumHolder(self.basename, self.dimension1, self.dimension2)
         
         
         

@@ -23,6 +23,7 @@ import control_relay
 import menu_tools
 import convert_file
 import header
+import rebin_hdf5
 
 
 class AppForm(QtGui.QMainWindow):
@@ -53,7 +54,7 @@ class AppForm(QtGui.QMainWindow):
 
         self.main_window.setLayout(layout)
         self.setCentralWidget(self.main_window)
-        self.resize(971,600)
+        self.resize(971,600) 
 
     def create_menu(self):
         """makes the menu toolbar on the top of the main window"""
@@ -74,8 +75,11 @@ class AppForm(QtGui.QMainWindow):
                                             slot = self.open_control,
                                             shortcut="Ctrl+P",
                                             tip="Open the Control Panel")
+        rebin_action = menu_tools.create_action(self, "&Rebin HDF5",
+                                                slot=rebin_hdf5.RebinHDF5)
         menu_tools.add_actions(self, self.file_menu, 
-            (open_action,convert_action, control_action,None, quit_action))
+            (open_action,convert_action, control_action,
+             rebin_action,None, quit_action))
         
         self.help_menu = self.menuBar().addMenu("&Help")
         about_action = menu_tools.create_action(self, "&About", 
@@ -87,7 +91,7 @@ class AppForm(QtGui.QMainWindow):
         """Displays pop-up about box"""
         msg = """A File Reader for Mf1 Files. Joel Grebel and Aaron Hammack
         """
-        QtGui.QMessageBox.about(self, "About the Mf1Reader", msg.strip())    
+        QtGui.QMessageBox.about(self, "About the Cube Reader", msg.strip())    
         
         
     def open_control(self):
@@ -114,6 +118,7 @@ class AppForm(QtGui.QMainWindow):
                 self.tab.addTab(newtab, '%s' %basename)
             else:
                 print 'No file selected'
+                                                                          
 
 def main():
     app = QtGui.QApplication.instance()

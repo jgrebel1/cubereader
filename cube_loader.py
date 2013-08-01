@@ -18,80 +18,44 @@ class Mf1Converter():
     
     def __init__(self, input_filename, output_filename, dimension1, dimension2, 
                  global_bool, progress_bar):
-        self.input_filename = input_filename
-        self.output_filename = output_filename
-        self.dimension1 = dimension1
-        self.dimension2 = dimension2
-        self.global_bool = global_bool
-        self.progress_bar = progress_bar
         #read the file
-        self.datasize = self.datasize_finder()
-        self.output_file = h5py.File(self.output_filename,'w')
-        experiments = self.output_file.create_group("Experiments") 
-        self.data_holder = experiments.create_group("__unnamed__")
-        with open(self.input_filename,'rb') as fid:
-            self.text_header=fid.read(2048)
-            self.temporary = h5py.File(self.output_filename+'temporary',
-                                       'w')
-            self.read_into_cube(fid)
-        #if not self.check_dimensions():
-            #self.fix_dimensions()
-        
-        self.build_xdata()
-        #self.info = self.build_info()
-        self.build_ycube()
-        self.write_header()            
-        self.output_file.close()
-        self.temporary.close()
-        os.remove(self.output_filename+'temporary')
-   
-        
-    def datasize_finder(self):
-        'finds the data size in the mf1 file'
-        fileinfo=os.stat(self.input_filename)
-        #subtract header size from total data size and divide by size of 
-        #spectrum and comments
-        if self.global_bool:
-            datasize = (fileinfo.st_size-2048-4*1600)/(4*3200+256)
-        else:
-            datasize = (fileinfo.st_size-2048)/(4*3200+256)
+        self.datasize = self.datasize_finder(input_filename, global_bool)
 
-        return datasize
-      
-    def check_dimensions(self):
-        'checks if we can make a cube from the data'
-        if self.dimension1*self.dimension2 != self.datasize:
-            return False
-        else:
-            return True
-        
-    def build_xdata(self):
+        with open(input_filename,'rb') as fid:
+            header=fid.read(2048)
+            temp_hdf5 = h5py.File(output_filename+'temporary','w')
+            self.read_into_cube(fid, temp_hdf5, global_bool, dimension1,
+                                dimension2, progress_bar)
+        self.generate_output(output_filename, temp_hdf5, global_bool, header)
+        temp_hdf5.close()
+        os.remove(output_filename+'temporary')
+   
+    def build_xdata(self, data_holder, temp_hdf5, global_bool):
         """
         builds the wavelength data (x data for graph). 
         """
-        if self.global_bool:
-            self.xdata = self.data_holder.create_dataset('xdata', data=self.xdata ) 
+        if global_bool:
+            data_holder.create_dataset('xdata', data=self.list_xdata ) 
         else:
-            self.xdata = self.data_holder.create_dataset('xdata',
-                                                  data=self.temporary["cube"][0,0,0:1600])
+            data_holder.create_dataset('xdata',
+                                       data=temp_hdf5["cube"][0,0,0:1600])
         
-    def build_ycube(self):
+    def build_ycube(self, data_holder, temp_hdf5, global_bool):
         """
         builds a 3 dimensional array with intensity data
         """
 
-        if self.global_bool:
-            self.ycube = self.data_holder.create_dataset('data',
-                                                  data=self.temporary["cube"][:,:,0:1600])
+        if global_bool:
+            data_holder.create_dataset('data',
+                                       data=temp_hdf5["cube"][:,:,0:1600])
         else:
-            self.ycube = self.data_holder.create_dataset('data', 
-                                                  data=self.temporary["cube"][:,:,1600:3200])
-
+            data_holder.create_dataset('data', 
+                                       data=temp_hdf5["cube"][:,:,1600:3200])
         
     def build_info(self):
         """
         optional info for each graph. not utilized yet. This may also
-        be outdated for displaying the info.
+        be an outdated function for displaying the info.
         """
         if self.global_bool:
             info = self.graph_array[:,1600:1664]
@@ -100,35 +64,58 @@ class Mf1Converter():
         info = info.transpose()
         return info
         
-    def read_into_cube(self,fid):
-        
-
-        
-        if self.global_bool:
-            cube = self.temporary.create_dataset('cube',
-                                                 (self.dimension1,
-                                                  self.dimension2, 1664))
-
-            self.xdata = np.fromfile(file=fid, dtype='>f', count=1600)
-            
-            for i in np.arange(self.dimension1):
-                for j in np.arange(self.dimension2):
-                    try:
-                        cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=1664)
-                    except:
-                        return
-                    current_spectrum = i*self.dimension2 + j
-                    self.progress_bar.setValue(current_spectrum)
+    def datasize_finder(self,input_filename, global_bool):
+        'finds the data size in the mf1 file'
+        fileinfo=os.stat(input_filename)
+        #subtract header size from total data size and divide by size of 
+        #spectrum and comments
+        if global_bool:
+            datasize = (fileinfo.st_size-2048-4*1600)/(4*3200+256)
         else:
-            cube = self.temporary.create_dataset('cube',(self.dimension1,self.dimension2, 3264))  
-            for i in np.arange(self.dimension1):
-                for j in np.arange(self.dimension2):
+            datasize = (fileinfo.st_size-2048)/(4*3200+256)
+        return datasize
+        
+    def generate_output(self, output_filename, temp_hdf5, global_bool, header):
+        output_file = h5py.File(output_filename,'w')
+        data_holder = output_file.create_group("Experiments/__unnamed__")         
+        self.build_xdata(data_holder, temp_hdf5, global_bool)
+        #self.info = self.build_info()
+        self.build_ycube(data_holder, temp_hdf5, global_bool)
+        self.write_header(data_holder, header)            
+        output_file.close()
+              
+    def read_into_cube(self,fid, temp_hdf5, global_bool,
+                       dimension1, dimension2, progress_bar):         
+        if global_bool:
+            cube = temp_hdf5.create_dataset('cube',
+                                                 (dimension1,
+                                                  dimension2, 1664))
+
+            self.list_xdata = np.fromfile(file=fid, dtype='>f', count=1600)
+            
+            for i in np.arange(dimension1):
+                for j in np.arange(dimension2):
                     try:
-                        cube[i,j,:] = np.fromfile(file=fid, dtype='>f', count=3264)
+                        cube[i,j,:] = np.fromfile(file=fid,
+                                                  dtype='>f', count=1664)
                     except:
                         return
-                    current_spectrum = i*self.dimension2 + j
-                    self.progress_bar.setValue(current_spectrum)
-    def write_header(self):
-        self.data_holder.attrs['header'] = self.text_header
+                    current_spectrum = i*dimension2 + j
+                    progress_bar.setValue(current_spectrum)
+        else:
+            cube = temp_hdf5.create_dataset('cube',(dimension1,
+                                                    dimension2,
+                                                    3264))  
+            for i in np.arange(dimension1):
+                for j in np.arange(dimension2):
+                    try:
+                        cube[i,j,:] = np.fromfile(file=fid, dtype='>f',
+                                                  count=3264)
+                    except:
+                        return
+                    current_spectrum = i*dimension2 + j
+                    progress_bar.setValue(current_spectrum)
+                    
+    def write_header(self,data_holder, header):
+        data_holder.attrs['header'] = header
         

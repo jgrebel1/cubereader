@@ -374,6 +374,11 @@ class Form(QMainWindow):
         
     def clear_spectrum_holder(self):
         self.spectrum_holder.empty_spectrum_box()
+        
+    def fit_from_cube_spectra(self, spectrum, index):
+        specifications = self.spectrum_holder.cube_spectra[index]
+        spectrum.set_spec(specifications)
+        spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
     
     def fit_from_spectrum_holder(self, spectrum):
         specifications = eval(self.spectrum_holder.spectrum_box)
@@ -415,20 +420,26 @@ class Form(QMainWindow):
                                                self.ycube[i,j,:],
                                                j,
                                                i)
-                if row_count==0:
-                    spectrum = peak_holder.get_spectrum(0)
-                    #print 'case1'
-                elif column_count==0:
-                    spectrum = self.spectrum_holder.cube_peaks[i*columns]
-                    #print 'case2'
-                else:
-                    spectrum = self.spectrum_holder.cube_peaks[-1]
-                    #print 'case3'
-                self.fit_from_spectrum_holder(spectrum)                
+                spectrum = peak_holder.get_spectrum(0)
+                if row_count == 0:                  
+                    self.fit_from_spectrum_holder(spectrum)
+                    row_count = 1
+                    column_count = 1
+
+                elif column_count == 0:                 
+                    index = i*(columns-1)
+                    self.fit_from_cube_spectra(spectrum, index)
+                    column_count = 1
+
+                else:                    
+                    index = -1
+                    self.fit_from_cube_spectra(spectrum, index)
+
                 spectrum_peaks = []
                 for peak in spectrum.peaks.peak_list:
                     spectrum_peaks.append(peak.get_spec())
                 self.spectrum_holder.cube_peaks.append(spectrum_peaks)
+                self.spectrum_holder.cube_spectra.append(spectrum.get_spec())
                 norm_int_res = self.get_normalized_integrated_residuals(spectrum)
                 self.spectrum_holder.cube_residuals.append(norm_int_res)
                 if self.stop_fit is True:

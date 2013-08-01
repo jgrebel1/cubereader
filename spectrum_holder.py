@@ -28,6 +28,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.dimension2 = dimension2
         self.spectrum_box = ''
         self.cube_peaks = []
+        self.cube_spectra = []
         self.amplitudes = []
         self.sigma = []
         self.widths = []
@@ -160,8 +161,8 @@ class SpectrumHolder(QtGui.QDialog):
             self.textbox_spectrum_box.clear()
 
     def generate_amplitudes_picture(self):  
-        for pixel in self.cube_peaks:
-            for peak in pixel:
+        for spectrum in self.cube_peaks:
+            for peak in spectrum:
                 self.amplitudes.append(peak['values'][0])
             
         self.amplitudes = np.reshape(self.amplitudes,
@@ -175,8 +176,8 @@ class SpectrumHolder(QtGui.QDialog):
                                           self.dimension2))
     
     def generate_sigma_picture(self):
-        for pixel in self.cube_peaks:
-            for peak in pixel:
+        for spectrum in self.cube_peaks:
+            for peak in spectrum:
                 self.sigma.append(peak['values'][2])
             
         self.sigma = np.reshape(self.sigma,
@@ -189,9 +190,9 @@ class SpectrumHolder(QtGui.QDialog):
     
     def notify_cube_fitted(self):
         self.label_cube_fitted.setText("Cube Box Loaded")
-        for pixel in self.cube_peaks:
+        for spectrum in self.cube_peaks:
             self.peak_count = 0            
-            for peak in pixel:
+            for peak in spectrum:
                 self.peak_count += 1
             break
         self.generate_amplitudes_picture()

@@ -13,58 +13,74 @@ import numpy as np
 
 class Visualization(HasTraits):
     scene = Instance(MlabSceneModel, ())
-    show_volume = Bool()
-    show_image_plane_widget_1 = Bool()
-    show_image_plane_widget_2 = Bool()
-    show_ismetric_surface = Bool()
     try:
         engine = mayavi.engine
     except:
         from mayavi.api import Engine
         engine = Engine()
         engine.start()
+        
     
-    def __init__(self,
-                 ycube,
-                 visualization_min_color,
-                 visualization_max_color):
+    def __init__(self,ycube, vmin_color, vmax_color):
         self.ycube = ycube
-        self.visualization_min_color = visualization_min_color
-        self.visualization_max_color = visualization_max_color
+        self.vmin_color = vmin_color
+        self.vmax_color = vmax_color
+        
+        self.initialize = True        
         self.update_plot()
+        
+        self.plane1 = self.engine.scenes[0].children[0].children[0].children[0]
+        self.plane2 = self.engine.scenes[0].children[0].children[0].children[1]
+        self.iso_surface = self.engine.scenes[0].children[0].children[0].children[2]
+        self.volume = self.engine.scenes[0].children[0].children[0].children[3]
+        
 
-    @on_trait_change('scene.activated, show_volume')
+
+       
+
+    def show_iso(self, check_state):
+        self.iso_surface.actor.actor.visibility = check_state
+
+    def show_plane1(self, check_state):
+        #self.plane1.ipw.enabled = check_state
+        self.plane1.actor.actor.visibility = check_state
+        self.plane1.implicit_plane.widget.enabled = check_state
+    
+    def show_plane2(self, check_state):
+        #self.plane2.ipw.enabled = check_state
+        self.plane2.actor.actor.visibility = check_state
+        self.plane2.implicit_plane.widget.enabled = check_state
+        
+    def show_volume(self, check_state):
+        self.volume.volume_mapper.cropping = not check_state
+        
+    @on_trait_change('scene.activated')
     def update_plot(self):
-        #if self.show_volume.get_value:
-        self.scene.mlab.pipeline.volume(self.scene.mlab.pipeline.scalar_field(self.ycube[:,:,:]), 
-                                        vmin=self.visualization_min_color,
-                                        vmax=self.visualization_max_color)
-        #mlab.pipeline.image_plane_widget(mlab.pipeline.scalar_field(s),
-                                         #plane_orientation='x_axes',
-                                         #slice_index=10, vmin=100, vmax=800)
         data = self.ycube
-        self.scene.mlab.pipeline.image_plane_widget(self.scene.mlab.pipeline.scalar_field(data),
-                                                    plane_orientation='y_axes',
-                                                    slice_index=10, 
-                                                    vmin=self.visualization_min_color,
-                                                    vmax=self.visualization_max_color)
-        self.scene.mlab.pipeline.image_plane_widget(self.scene.mlab.pipeline.scalar_field(data),
-                                         plane_orientation='z_axes',
-                                         slice_index=10, vmin=self.visualization_min_color, vmax=self.visualization_max_color)   
+        scalar_field_data = self.scene.mlab.pipeline.scalar_field(data)
+        self.scene.mlab.pipeline.scalar_cut_plane(scalar_field_data,
+                                                    plane_orientation='y_axes')#,
+                                                    #slice_index=10, 
+                                                    #vmin=self.vmin_color,
+                                                    #vmax=self.vmax_color)
+        self.scene.mlab.pipeline.scalar_cut_plane(scalar_field_data,
+                                                    plane_orientation='z_axes')#,
+                                                    #slice_index=10,
+                                                    #vmin=self.vmin_color, 
+                                                    #vmax=self.vmax_color)  
+        
+        self.scene.mlab.pipeline.iso_surface(scalar_field_data,
+                                             vmin = self.vmin_color,
+                                             vmax = self.vmax_color)
+                                                    
+        self.scene.mlab.pipeline.volume(scalar_field_data, 
+                                        vmin=self.vmin_color,
+                                        vmax=self.vmax_color)
                         
         self.scene.mlab.outline()
-        #self.scene.mlab.array_source.spacing = np.array([ 4.,  1.,  1.])
-        #self.scene.mlab.test_points3d()
-        #array_source = self.engine.scenes[0].children[0]
-        #image_plane_widget = array_source.children[0].children[0]
-        #array_source.spacing = np.array([ 4.,  1.,  1.])
-        #image_plane_widget.ipw.point2 = np.array([100, 11, .5])
-        volume = self.engine.scenes[0].children[0].children[0].children[0]
-        volume.volume_mapper.cropping = self.show_volume
-
+        
     view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene),
                      height=250, width=300, show_label=False),
-                Item('show_volume'),
                 resizable=True # We need this to resize with the parent widget
                 )
 
@@ -77,18 +93,61 @@ class MayaviQWidget(QtGui.QWidget):
         self.visualization = Visualization(ycube,
                                            visualization_min_color,
                                            visualization_max_color)
-        self.hide_button = QtGui.QPushButton('Close Window')
-        self.connect(self.hide_button, QtCore.SIGNAL('clicked()'), 
-                    self.hide_window)
+        button_hide = QtGui.QPushButton('Close Window')
+        button_hide.clicked.connect(self.hide_window)
+        
+        self.group_checkbox = QtGui.QGroupBox()  
+        self.group_checkbox.setTitle("Display Objects")
+          
+        self.checkbox_volume = QtGui.QCheckBox("Show Volume")
+        self.checkbox_volume.setChecked(True)
+        self.checkbox_volume.stateChanged.connect(self.show_volume)        
+        
+        self.checkbox_plane1 = QtGui.QCheckBox("Show Plane 1")
+        self.checkbox_plane1.setChecked(True)
+        self.checkbox_plane1.stateChanged.connect(self.show_plane1)
+        
+        self.checkbox_plane2 = QtGui.QCheckBox("Show Plane 2")
+        self.checkbox_plane2.setChecked(True)
+        self.checkbox_plane2.stateChanged.connect(self.show_plane2)
+        
+        self.checkbox_iso = QtGui.QCheckBox("Show Isometric Surface")
+        self.checkbox_iso.setChecked(True)
+        self.checkbox_iso.stateChanged.connect(self.show_iso)
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(self.checkbox_volume)
+        hbox.addWidget(self.checkbox_plane1)
+        hbox.addWidget(self.checkbox_plane2)        
+        hbox.addWidget(self.checkbox_iso)    
+        self.group_checkbox.setLayout(hbox)
 
         self.ui = self.visualization.edit_traits(parent=self,
                                                  kind='subpanel').control
-        layout.addWidget(self.hide_button)
+        layout.addWidget(button_hide)
         layout.addWidget(self.ui)
+        layout.addWidget(self.group_checkbox)
         self.ui.setParent(self)
+        
     def hide_window(self):
         self.visualization.scene.mlab.close()
         self.hide()
+            
+    def show_iso(self):
+        value = self.checkbox_iso.isChecked()
+        self.visualization.show_iso(value)            
+            
+    def show_plane1(self):
+        value = self.checkbox_plane1.isChecked()
+        self.visualization.show_plane1(value)            
+            
+    def show_plane2(self):
+        value = self.checkbox_plane2.isChecked()
+        self.visualization.show_plane2(value)            
+    
+    def show_volume(self):
+        value = self.checkbox_volume.isChecked()
+        self.visualization.show_volume(value)
 
 """
 if __name__ == "__main__":

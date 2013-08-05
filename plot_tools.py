@@ -6,54 +6,73 @@ Created on Fri Jul 12 19:44:34 2013
 """
 import matplotlib
 from matplotlib import pyplot as plt
+import analysis
 
 
 def change_display(axes, data, data_view):
     """
-    changes the view between ev and wavelength
+    changes the view between ev and wavelength for ev and wavelength data
     """
     axes.cla()
+    xdata = analysis.xdata_calc(data, data_view)
+    ydata = analysis.ydata_calc(data, data_view)
+    img2, = axes.plot(xdata,ydata,'.')      
     if data_view.display_ev:
-        img2, = axes.plot(1240/data.xdata,
-                          data.ycube[data_view.ycoordinate,
-                                data_view.xcoordinate,:],
-                          '.')
-        axes.set_xlabel('ev')
-        
+        axes.set_xlabel('ev')        
     else:
-        img2, = axes.plot(data.xdata,
-                          data.ycube[data_view.ycoordinate,
-                                data_view.xcoordinate,:],
-                                  '.')       
         axes.set_xlabel('$\lambda$ [nm]')
+    
     return img2
 
-def initialize_graph(axes, data, maxval):
+def initialize_graph(axes, data, data_view, maxval):
     """
     initializes the graph on screen
     xcoordinates and ycoordinates start from 0        
     """
-    img2, = axes.plot(data.xdata, data.ycube[0,0,:],'.')
-    plt.ylim(ymin=-maxval/10, ymax=maxval)
-    plt.xlabel('$\lambda$ [nm]')
+    axes.cla()
+    xdata = analysis.xdata_calc(data, data_view)
+    ydata = analysis.ydata_calc(data, data_view)
+    
+    #scale maxval so data fits on screen. 600 is arbitrary
+    scale_factor = 600
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        maxval = maxval
+    if data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        maxval = maxval*scale_factor
+    if not data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        maxval = maxval/scale_factor
+    if not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        maxval = maxval
+        
+    axes.set_ylim((-maxval/10,maxval))    
+    img2, = axes.plot(xdata, ydata,'.')
+
+    if data_view.display_ev:
+        plt.xlabel('ev')
+    else:
+        plt.xlabel('$\lambda$ [nm]')       
     return img2
 
-def initialize_image(axes, data, slice1, maxval):
+def initialize_image(axes, data, data_view, slice1, maxval):
     'Initializes the image from the datacube'
    
     slicedata = data.ycube[:,:,slice1]
     img = axes.imshow(slicedata, interpolation='nearest',
                           clim = (0,maxval))
-
-    axes.set_title('Current Slice Wavelength:%0.0f '
-                       %float(data.xdata[slice1]))
+    
+    xdata = analysis.xdata_calc(data, data_view)
+    if data_view.display_ev:
+        axes.set_title('Current Slice ev:%0.2f'%float(xdata[slice1]))
+    else:
+        axes.set_title('Current Slice Wavelength:%0.2f'%float(xdata[slice1]))
     plt.yticks([])
     plt.xticks([]) 
     return img
     
 def plot_graph(img, axes, data, data_view):
     """updates the graph on screen with the given x and y coordinates"""
-    img.set_ydata(data.ycube[data_view.ycoordinate, data_view.xcoordinate,:])
+    ydata = analysis.ydata_calc(data, data_view)    
+    img.set_ydata(ydata)
     img.figure.canvas.draw()
     
 def plot_image(img, axes, data, data_view):
@@ -62,13 +81,12 @@ def plot_image(img, axes, data, data_view):
     slicedata = data.ycube[:,:,slice1]
     img.set_array(slicedata)
     img.set_clim(vmax=data_view.currentmaxvalcolor,
-                 vmin=data_view.currentminvalcolor)    
+                 vmin=data_view.currentminvalcolor)
+    xdata = analysis.xdata_calc(data, data_view)    
     if data_view.display_ev:
-        axes.set_title('Current Slice ev:%0.2f'
-                            %float(1240/data.xdata[slice1]))
+        axes.set_title('Current Slice ev:%0.2f'%float(xdata[slice1]))
     else:
-        axes.set_title('Current Slice Wavelength:%0.0f '
-                          %float(data.xdata[slice1]))
+        axes.set_title('Current Slice Wavelength:%0.0f '%float(xdata[slice1]))
     img.figure.canvas.draw()
      
         

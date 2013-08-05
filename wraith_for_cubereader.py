@@ -30,6 +30,8 @@ from pylab import *
 
 from scipy import integrate
 
+import copy as module_copy
+
 #### import project specific items ####
 
 #spectra fitting toolkit
@@ -45,19 +47,21 @@ from wraith.data_formats import *
 from wraith.parameter_gui import *
 from wraith.optimization_gui import *
 
+import analysis
+
 
 #Main window to control plotting
 class Form(QMainWindow):
-    def __init__(self,filename, xdata, ydata, xcoordinate, ycoordinate,
-                 spectrum_holder, ycube, parent=None):
+    def __init__(self,filename, data, data_view, spectrum_holder, parent=None):
         super(Form, self).__init__(parent)
         self.filename = filename
-        self.xdata = xdata
-        self.ydata = ydata
-        self.xcoordinate = xcoordinate
-        self.ycoordinate = ycoordinate
+        self.xdata = module_copy.copy(analysis.xdata_calc(data, data_view))
+        self.data = data
+        self.ydata = module_copy.copy(analysis.ydata_calc(data, data_view))
+        self.xcoordinate = module_copy.copy(data_view.xcoordinate)
+        self.ycoordinate = module_copy.copy(data_view.ycoordinate)
         self.spectrum_holder = spectrum_holder
-        self.ycube = ycube
+        self.display_ev = copy(data_view.display_ev)
         self.setWindowTitle('Interactive XPS Explorer')
         self.ignore_signals = False
 
@@ -400,14 +404,14 @@ class Form(QMainWindow):
         if self.spectrum_holder.cube_fitting:
             self.stop_fit = True
         self.threadPool.append( GenericThread(self.fit_cube_from_spectrum_holder_process))
-        (rows,columns,slices) = np.shape(self.ycube[...])
+        (rows,columns,slices) = np.shape(self.data.ycube[...])
         self.progress_bar = self.fit_cube_progress_bar(rows*columns)
         self.threadPool[len(self.threadPool)-1].start()
     
     def fit_cube_from_spectrum_holder_process(self):
         locker = QtCore.QMutexLocker(self.spectrum_holder.cube_mutex)
         self.spectrum_holder.notify_cube_fitting()
-        (rows,columns,slices) = np.shape(self.ycube[...])
+        (rows,columns,slices) = np.shape(self.data.ycube[...])
 
         value = 0
         self.stop_fit = False
@@ -416,8 +420,12 @@ class Form(QMainWindow):
             column_count = 0
             for j in np.arange(columns):
                 peak_holder = DataHolder()
+                ydata = analysis.ydata_calc2(input_ydata=self.data.ycube[i,j,:],
+                                             input_xdata = self.data.xdata,
+                                             dtype=self.data.xdata_info['data_type'],
+                                             display_ev = self.display_ev)
                 peak_holder.load_from_mf1_cube(self.xdata[:],
-                                               self.ycube[i,j,:],
+                                               ydata,
                                                j,
                                                i)
                 spectrum = peak_holder.get_spectrum(0)

@@ -24,48 +24,51 @@ def get_file_basename(path_name):
 def get_dimensions(ycube):
     (rows, columns, slices) = np.shape(ycube[...])
     return (rows, columns, slices)
-def ev_to_slice(ev, data):
-    """
-    converts an input ev into the nearest xdata index using interpolation
-    """    
-    length, = np.shape(data.xdata)
-    if ev == 0:
-        ev = 0.000001
-    if data.xdata_info['wavelength_ordered']:
-        value = 1240/ev
-        ordered_xdata = data.xdata
-    else:
-        value = ev
-        ordered_xdata = 1240/data.xdata
+    
+def ev_to_index(ev, data):
     if data.xdata_info['reversed']:
-        maxdata = data.xdata[0]
-        mindata = data.xdata[-1]
-        ordered_xdata = ordered_xdata[::-1]
+        ordered_xdata = data.xdata[::-1]
     else:
-        maxdata = data.xdata[-1]
-        mindata = data.xdata[0]
-        ordered_xdata = ordered_xdata
-    f = interpolate.interp1d(ordered_xdata, np.arange(length)) 
+        ordered_xdata = data.xdata
+    if data.xdata_info['data_type'] == 'ev':
+        value = ev
+    elif data.xdata_info['data_type'] == 'wavelength':
+        value = 1240/ev
+    index = index_from_ordered_list(value, ordered_xdata)
+    if data.xdata_info['reversed']:
+        length, = np.shape(data.xdata)
+        index = length -1 - index
+    return index
+    
+def index_from_ordered_list(value, ordered_list):
+    """
+    input an ordered list.
+    returns the index of the number closest to value
+    """
+    maxdata = ordered_list[-1]
+    mindata = ordered_list[0]
+    length, = np.shape(ordered_list)
+    f = interpolate.interp1d(ordered_list, np.arange(length)) 
     if value > maxdata:
-        imageval = length - 1
+        index = length - 1
     elif value < mindata:
-        imageval = 0
+        index = 0
     else:
         for number in np.arange(length):
             if number > f(value):
-                imageval = number
+                index = number
                 break
-    if not data.xdata_info['reversed']:
-        imageval = length -1 - imageval
-  
-    return imageval
+    return index
     
-def wavelength_to_slice(wavelength, data):
+def wavelength_to_index(wavelength, data):
     """
     converts an input wavelength into the nearest xdata index using interpolation
     """
+    if wavelength == 0:
+        wavelength = .000001
     ev = 1240/wavelength
-    ev_to_slice(ev, data)
+    index = ev_to_index(ev, data)
+    return index
     
 def get_xdata(hdf5_axis):
     scale = hdf5_axis.attrs['scale']
@@ -79,3 +82,76 @@ def get_xdata(hdf5_axis):
     xdata = np.array(xdata)
     return xdata
     
+def xdata_calc(data, data_view):
+    """
+    returns xdata based on data type and current display
+    """
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        xdata = data.xdata
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        xdata = 1240/data.xdata
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        xdata = 1240/data.xdata
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        xdata = data.xdata
+    return xdata
+    
+def xdata_calc2(input_xdata, dtype, display_ev):
+    if display_ev and dtype == 'ev':
+        xdata = input_xdata
+    elif display_ev and dtype == 'wavelength':
+        xdata = 1240/input_xdata
+    elif not display_ev and dtype == 'ev':
+        xdata = 1240/input_xdata
+    elif not display_ev and dtype == 'wavelength':
+        xdata = input_xdata
+    return xdata
+    
+def ydata_calc(data, data_view):
+    """
+    returns ydata based on data type and current display from data and
+    data_view containers.
+    """    
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        ydata = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]        
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        wavelength_data = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]
+        ydata = []
+        for index, lambda_photon_count in enumerate(wavelength_data):
+            ev_photon_count = (lambda_photon_count)*(data.xdata[index]**2/1240)
+            ydata.append(ev_photon_count)
+        ydata = np.array(ydata)
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        ev_data = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]
+        ydata = []
+        for index,ev_photon_count in enumerate(ev_data):
+            wavelength_photon_count = (ev_photon_count)*(1240/data.xdata[index])
+            ydata.append(wavelength_photon_count)
+        ydata = np.array(ydata)
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        ydata = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]        
+    return ydata
+    
+def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):
+    """
+    returns ydata based on data type and current display from input.
+    """
+    if display_ev and dtype == 'ev':
+        ydata = input_ydata       
+    elif display_ev and dtype == 'wavelength':
+        wavelength_data = input_ydata
+        ydata = []
+        for index, lambda_photon_count in enumerate(wavelength_data):
+            ev_photon_count = (lambda_photon_count)*(input_xdata[index]**2/1240)
+            ydata.append(ev_photon_count)
+        ydata = np.array(ydata)
+    elif not display_ev and dtype == 'ev':
+        ev_data = input_ydata
+        ydata = []
+        for index,ev_photon_count in enumerate(ev_data):
+            wavelength_photon_count = (ev_photon_count)*(input_xdata[index])
+            ydata.append(wavelength_photon_count)
+        ydata = np.array(ydata)
+    elif not display_ev and dtype == 'wavelength':
+        ydata = input_ydata        
+    return ydata

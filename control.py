@@ -25,7 +25,7 @@ class ControlWindow(QtGui.QDialog):
         
     def inputs(self):
 
-        self.imageslicelabel= QtGui.QLabel('Image Slice Wavelength:')
+        self.imageslicelabel= QtGui.QLabel('Image Slice ev:')
         maxcolorlabel = QtGui.QLabel('Max Color Value:')
         mincolorlabel = QtGui.QLabel('Min Color Value:')        
         graphslicelabelx = QtGui.QLabel('Graph Slice X Coordinate:')

@@ -5,23 +5,47 @@ Created on Mon Jul 08 17:44:52 2013
 @author: JG
 """
 import os
-import h5py
+import analysis
 import numpy as np
+import copy
 
-def export_graph(hdf5_file, output_file, xcoordinate, ycoordinate):
-    graph = prepare_graph(hdf5_file, xcoordinate, ycoordinate)
-    save_graph(output_file, graph)
+def export_spectrum(filename, data, data_view):
+    """
+    export the current spectrum to an excel file in the original file's folder
+    """
+    location = 'x' + str(data_view.xcoordinate) + 'y' + str(data_view.ycoordinate)
+    no_ext_filename, ext = os.path.splitext(filename)
+    out_filename = no_ext_filename + location + '.csv'
+    xdata = analysis.xdata_calc(data,data_view)
+    ydata = analysis.ydata_calc(data,data_view)
+    out = np.c_[xdata,ydata]
+    np.savetxt(str(out_filename), out, delimiter=",", fmt="%10.5f")
     
-
-def save_graph(output_file, graph):
-    np.savetxt(output_file, graph)
-        
-
-def prepare_graph(hdf5_file, xcoordinate, ycoordinate):
-    data = h5py.File(hdf5_file,'r')
-    ycube = data['ycube']
-    xdata = data['xdata']
-    graph = np.vstack((xdata, ycube[xcoordinate, ycoordinate, :]))
-    graph = graph.transpose()
-    graph = np.flipud(graph)
-    return graph
+def export_cube(filename, data, data_view):
+    """
+    export the entire cube to an excel file in the original file's
+    folder.
+    
+    format is xdata, spectrum etc.
+    """
+    display_ev = copy.copy(data_view.display_ev)
+    no_ext_filename, ext = os.path.splitext(filename)
+    out_filename = no_ext_filename + '.csv'
+    rows, columns, slices = np.shape(data.ycube[...])
+    spectra_count = 0
+    for i in np.arange(rows):
+        for j in np.arange(columns):
+            xdata = analysis.xdata_calc2(data.xdata,
+                                         data.xdata_info['data_type'],
+                                         display_ev)
+            ydata = analysis.ydata_calc2(data.ycube[i,j,:],
+                                         data.xdata,
+                                         data.xdata_info['data_type'],
+                                         display_ev)
+            if spectra_count == 0:
+                out = np.c_[xdata, ydata]
+                spectra_count = 1
+            else:
+                out = np.c_[out, xdata, ydata]
+            print np.shape(out)
+    np.savetxt(str(out_filename), out, delimiter=",", fmt="%10.5f")

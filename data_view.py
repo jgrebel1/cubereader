@@ -4,13 +4,14 @@ Created on Fri Jul 12 19:48:40 2013
 
 @author: JG
 """
+import analysis
 
 class DataView():
     """
     Holds the current views of the tab
     """
     def __init__(self, maxval, number_of_slices):
-        self.display_ev = False
+        self.display_ev = True
         self.xcoordinate = 0
         self.ycoordinate = 0
         self.currentmaxvalcolor = maxval

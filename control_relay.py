@@ -41,6 +41,8 @@ class ControlRelay(QtCore.QObject):
             self.window.ev.setChecked(True)
         else:
             self.window.wavelength.setChecked(True)
+        self.window.update_label()
+        
     def display_ev(self):
         self.current_tab.show_ev()
     
@@ -80,13 +82,14 @@ class ControlRelay(QtCore.QObject):
         """
         slice_input = float(self.window.imageslice.text())
         if self.current_tab.data_view.display_ev:
-            imageval = analysis.ev_to_slice(slice_input, 
+            imageval = analysis.ev_to_index(slice_input, 
                                             self.current_tab.data) 
-            self.current_tab.slider.setValue(self.current_tab.number_of_slices - 1 - imageval) 
-        else:      
-            imageval = analysis.wavelength_to_slice(slice_input, 
-                                                    self.current_tab.data)
             self.current_tab.slider.setValue(imageval) 
+        else:      
+            imageval = analysis.wavelength_to_index(slice_input, 
+                                                    self.current_tab.data)
+            self.current_tab.slider.setValue(self.current_tab.number_of_slices\
+                                             - 1-imageval) 
 
     def update_maxcolor_from_control(self):
         """

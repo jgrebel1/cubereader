@@ -22,9 +22,9 @@ class Data():
         self.ycube = self.hdf5["Experiments/__unnamed__/data"]       
         try:
             self.xdata = self.hdf5["Experiments/__unnamed__/xdata"][...]
-            self.xdata_info['wavelength_ordered'] = True
+            self.xdata_info['data_type'] = 'wavelength'
             self.xdata_info['reversed'] = True
         except:
-            self.xdata = np.array(1240/analysis.get_xdata(self.hdf5["Experiments/__unnamed__/axis-2"]))
-            self.xdata_info['wavelength_ordered'] = False
+            self.xdata = analysis.get_xdata(self.hdf5["Experiments/__unnamed__/axis-2"])
+            self.xdata_info['data_type'] = 'ev'
             self.xdata_info['reversed'] = False

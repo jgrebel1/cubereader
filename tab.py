@@ -65,14 +65,19 @@ class Tab(QtGui.QWidget):
         self.img_axes = self.fig.add_subplot(121)
         self.img = plot_tools.initialize_image(self.img_axes,
                                                data = self.data,
+                                               data_view = self.data_view,
                                                slice1=1,
                                                maxval=self.maxval)
         self.marker, = self.img_axes.plot(0,0,'wo')
         self.cbar = plt.colorbar(self.img)
         self.set_color_bar_settings()
-        self.graph_axes = self.fig.add_subplot(122)        
+        self.graph_axes = self.fig.add_subplot(122)  
+        #self.img2 = plot_tools.change_display(self.graph_axes,
+                                              #self.data,
+                                              #self.data_view)
         self.img2 = plot_tools.initialize_graph(self.graph_axes,
                                                 self.data,
+                                                self.data_view,
                                                 self.maxval)
 
         # Create the navigation toolbar, tied to the canvas
@@ -86,10 +91,15 @@ class Tab(QtGui.QWidget):
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.set_slider_settings()
         
-        self.button_export_graph = QtGui.QPushButton('Export Graph')
-        self.button_export_graph.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+        self.button_export_spectrum = QtGui.QPushButton('Export Spectrum')
+        self.button_export_spectrum.setSizePolicy(QtGui.QSizePolicy.Fixed, 
                                                QtGui.QSizePolicy.Fixed)
-        self.button_export_graph.clicked.connect(self.export_graph)
+        self.button_export_spectrum.clicked.connect(self.export_spectrum)
+        
+        self.button_export_cube = QtGui.QPushButton('Export Cube')
+        self.button_export_cube.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+                                               QtGui.QSizePolicy.Fixed)
+        self.button_export_cube.clicked.connect(self.export_cube)
         
         self.button_wraith = QtGui.QPushButton('Open Wraith for Current Graph')
         self.button_wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
@@ -114,17 +124,21 @@ class Tab(QtGui.QWidget):
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
                      
-        self.label_vmin_slice = QtGui.QLabel('Min Wavelength:')
-        self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[-1]))
+        self.label_vmin_slice = QtGui.QLabel()  
+        self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
         self.connect(self.textbox_vmin_slice, 
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
+          
                      
-        self.label_vmax_slice = QtGui.QLabel('Max Wavelength:')
-        self.textbox_vmax_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
+        self.label_vmax_slice = QtGui.QLabel()
+        self.textbox_vmax_slice = QtGui.QLineEdit(str(self.data.xdata[-1]))
         self.connect(self.textbox_vmax_slice, 
                      QtCore.SIGNAL('editingFinished ()'), 
                      self.update_visualization_settings)
+        
+        self.initialize_vbox(self.label_vmin_slice, self.label_vmax_slice,
+                               self.textbox_vmin_slice, self.textbox_vmax_slice)
         
         hbox = QtGui.QHBoxLayout()
         vbox = QtGui.QVBoxLayout()
@@ -133,7 +147,8 @@ class Tab(QtGui.QWidget):
         hbox.addWidget(left_spacer)
         hbox.addWidget(self.slider)
         vbox.addLayout(hbox)
-        vbox.addWidget(self.button_export_graph)
+        vbox.addWidget(self.button_export_spectrum)
+        vbox.addWidget(self.button_export_cube)
         vbox.addWidget(self.button_wraith)
         hbox_visualization = QtGui.QHBoxLayout()
         hbox_visualization.addStretch(1)
@@ -161,16 +176,18 @@ class Tab(QtGui.QWidget):
         self. img2 = plot_tools.change_display(self.graph_axes,
                                                self.data,
                                                self.data_view)
+                                               
         if self.data_view.display_ev:
             self.label_vmin_slice.setText('Min ev:')
-            self.textbox_vmin_slice.setText(str(1240/self.data.xdata[self.data_view.vmax_slice]))
             self.label_vmax_slice.setText('Max ev:')
-            self.textbox_vmax_slice.setText(str(1240/self.data.xdata[self.data_view.vmin_slice]))
         else:
-            self.label_vmin_slice.setText('Min Wavelength:')
-            self.textbox_vmin_slice.setText(str(self.data.xdata[self.data_view.vmin_slice]))         
+            self.label_vmin_slice.setText('Min Wavelength:')                    
             self.label_vmax_slice.setText('Max Wavelength:')
-            self.textbox_vmax_slice.setText(str(self.data.xdata[self.data_view.vmax_slice]))      
+            
+        xdata = analysis.xdata_calc(self.data, self.data_view)    
+        self.textbox_vmin_slice.setText(str(xdata[self.data_view.vmin_slice]))     
+        self.textbox_vmax_slice.setText(str(xdata[self.data_view.vmax_slice]))     
+        
     def close_tab(self):
         if self.tab.currentWidget().hdf5:
             self.tab.currentWidget().hdf5.close()
@@ -189,33 +206,33 @@ class Tab(QtGui.QWidget):
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
                      
-    def export_graph(self):
+    def export_spectrum(self):
         """
-        exports the current graph to a two column text file in the 
+        exports the current graph to a two column excel file in the
         original file's folder
         """
-
-        print 'saving graph at:', folder
-        if self.data_view.display_ev:
-            (output_filename) = (self.filename
-                                 + 'x' + self.data_view.xcoordinate
-                                 + 'y' + self.data_view.ycoordinate
-                                 + 'wavelength'
-                                 + '.txt')            
-            export.export_graph(self.filename,output_filename,
-                                1240/self.data_view.xcoordinate,
-                                self.data_view.ycoordinate)
-        else:
-            (output_filename) = (self.filename
-                                 + 'x' + self.data_view.xcoordinate
-                                 + 'y' + self.data_view.ycoordinate
-                                 + 'wavelength'
-                                 + '.txt')
-            export.export_graph(self.filename,output_filename,
-                                self.data_view.xcoordinate,
-                                self.data_view.ycoordinate)
-        print 'Graph saved'  
+        export.export_spectrum(self.filename, self.data, self.data_view)
         
+    def export_cube(self):
+        """
+        export the entire cube to an excel file in the original file's
+        folder.
+        
+        format is xdata, spectrum etc.
+        """
+        export.export_cube(self.filename, self.data, self.data_view)
+    
+    def initialize_vbox(self,label_vmin_slice, label_vmax_slice,
+                             textbox_vmin_slice, textbox_vmax_slice):
+        if self.data_view.display_ev:
+            self.label_vmin_slice.setText('Min ev:')
+            self.label_vmax_slice.setText('Max ev:')
+        else:
+            self.label_vmin_slice.setText('Min wavelength:')
+            self.label_vmax_slice.setText('Max wavelength:')
+        xdata = analysis.xdata_calc(self.data, self.data_view)
+        textbox_vmin_slice.setText(str(xdata[0]))
+        textbox_vmax_slice.setText(str(xdata[-1]))
                     
     def make_spectrum_holder(self):
         self.spectrum_holder = spectrum_holder.SpectrumHolder(self.basename, self.dimension1, self.dimension2)
@@ -309,22 +326,12 @@ class Tab(QtGui.QWidget):
                                                                 self.data_view.vmax_color)
         self.visualization_window.show()
     def open_wraith(self):
-        if self.data_view.display_ev:
-            self.wraith_window = wraith_for_cubereader.Form(self.filename, 1240/self.data.xdata,
-                                                     self.data.ycube[self.data_view.ycoordinate,
-                                                           self.data_view.xcoordinate,:],
-                                                     self.data_view.xcoordinate,
-                                                     self.data_view.ycoordinate,
-                                                     self.spectrum_holder,
-                                                     self.data.ycube)
-        else:
-            self.wraith_window = wraith_for_cubereader.Form(self.filename, self.data.xdata,
-                                                     self.data.ycube[self.data_view.ycoordinate,
-                                                           self.data_view.xcoordinate,:],
-                                                     self.data_view.xcoordinate,
-                                                     self.data_view.ycoordinate,
-                                                     self.spectrum_holder, 
-                                                     self.data.ycube)
+        xdata = analysis.xdata_calc(self.data, self.data_view)
+        ydata = analysis.ydata_calc(self.data, self.data_view)
+        self.wraith_window = wraith_for_cubereader.Form(self.filename,
+                                                        self.data,
+                                                        self.data_view,
+                                                        self.spectrum_holder)
         self.wraith_window.show()                                                  
        
     def reset_colors(self):
@@ -387,19 +394,14 @@ class Tab(QtGui.QWidget):
         self.data_view.vmax_color = float(self.textbox_vmax_color.text())
         min_slice = float(self.textbox_vmin_slice.text())
         max_slice = float(self.textbox_vmax_slice.text())
-        # the -1 compensates for python lists starting at 0
         if self.data_view.display_ev:
-            self.data_view.vmin_slice = self.number_of_slices -1 - analysis.ev_to_slice(min_slice, 
+            self.data_view.vmin_slice = analysis.ev_to_index(min_slice, 
                                                              self.data)
-            print "min slice is:", self.data_view.vmin_slice
-            self.data_view.vmax_slice  = self.number_of_slices - 1 - analysis.ev_to_slice(max_slice,
+            self.data_view.vmax_slice = analysis.ev_to_index(max_slice,
                                                              self.data)
-            print "max slice is:", self.data_view.vmax_slice
         else:
-            self.data_view.vmin_slice = analysis.wavelength_to_slice(min_slice,
+            self.data_view.vmin_slice = analysis.wavelength_to_index(min_slice, 
                                                                      self.data)
-            self.data_view.vmax_slice = analysis.wavelength_to_slice(max_slice,
+            self.data_view.vmax_slice = analysis.wavelength_to_index(max_slice,
                                                                      self.data)
-            print "min slice is:", self.data_view.vmin_slice
-            print "max slice is:", self.data_view.vmax_slice
 

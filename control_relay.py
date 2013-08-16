@@ -56,10 +56,12 @@ class ControlRelay(QtCore.QObject):
         """
 
         self.current_tab.data_view.xcoordinate = int(self.window.graphslicex.text())
+        self.current_tab.marker.set_xdata(self.current_tab.data_view.xcoordinate)        
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
                               self.current_tab.data,
                               self.current_tab.data_view)
+
 
             
     def update_graphslicey_from_control(self):
@@ -68,10 +70,12 @@ class ControlRelay(QtCore.QObject):
         y coordinate for the displayed graph
         """
         self.current_tab.data_view.ycoordinate = int(self.window.graphslicey.text())
+        self.current_tab.marker.set_ydata(self.current_tab.data_view.ycoordinate)        
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
                               self.current_tab.data,
                               self.current_tab.data_view)   
+
 
 
     def update_imageslice_from_control(self):

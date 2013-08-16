@@ -84,7 +84,7 @@ def get_xdata(hdf5_axis):
     
 def xdata_calc(data, data_view):
     """
-    returns xdata based on data type and current display
+    returns xdata based on data type and current display mode
     """
     if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
         xdata = data.xdata
@@ -109,8 +109,7 @@ def xdata_calc2(input_xdata, dtype, display_ev):
     
 def ydata_calc(data, data_view):
     """
-    returns ydata based on data type and current display from data and
-    data_view containers.
+    returns ydata based on data type and current display mode.
     """    
     if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
         ydata = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]        
@@ -134,7 +133,7 @@ def ydata_calc(data, data_view):
     
 def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):
     """
-    returns ydata based on data type and current display from input.
+    returns ydata based on data type and current display mode from input.
     """
     if display_ev and dtype == 'ev':
         ydata = input_ydata       
@@ -155,3 +154,104 @@ def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):
     elif not display_ev and dtype == 'wavelength':
         ydata = input_ydata        
     return ydata
+
+def yimage_calc(data, data_view):
+    slice1 = data_view.slider_val
+    
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        yimage = data.ycube[:,:,slice1]
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        yimage = (data.ycube[:,:,slice1])*(data.xdata[slice1]**2/1240)
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+        yimage = (data.ycube[:,:,slice1])*(data.xdata[slice1])
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        yimage = data.ycube[:,:,slice1]
+    
+    return yimage
+    
+def colors_calc(data, data_view):
+    """
+    returns min and max colors for display based on data type
+    and current display mode.
+    
+    scale_factor so data scales correctly for both wavelength and ev.
+    600 is arbitrary   
+    """
+    scale_factor = 600
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        max_color = data_view.currentmaxvalcolor
+        min_color = data_view.currentminvalcolor
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_color = data_view.currentmaxvalcolor*scale_factor
+        min_color = data_view.currentminvalcolor*scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+        max_color = data_view.currentmaxvalcolor/scale_factor
+        min_color = data_view.currentminvalcolor/scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_color = data_view.currentmaxvalcolor
+        min_color = data_view.currentminvalcolor
+
+    return max_color, min_color
+    
+def colors_calc_max(input_max_color, data, data_view):   
+    """
+    returns max color for display based on data type
+    and current display mode from user input values.
+    
+    scale_factor so data scales correctly for both wavelength and ev.
+    600 is arbitrary   
+    """
+    scale_factor = 600
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        max_color = input_max_color
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_color = input_max_color*scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+        max_color = input_max_color/scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_color = input_max_color
+
+    return max_color
+    
+def colors_calc_min(input_min_color,data, data_view):   
+    """
+    returns min and color for display based on data type
+    and current display mode from user input values.
+    
+    scale_factor so data scales correctly for both wavelength and ev.
+    600 is arbitrary   
+    """
+    scale_factor = 600
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        min_color = input_min_color
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        min_color = input_min_color*scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+        min_color = input_min_color/scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        min_color = input_min_color
+
+    return min_color
+
+
+def maxval_calc(data, data_view):
+    """
+    returns maxval for display based on data type and current display mode.
+    
+    scale_factor so data scales correctly for both wavelength and ev.
+    600 is arbitrary    
+    """
+
+    scale_factor = 600
+    
+    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+        maxval = data_view.maxval
+    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        maxval = data_view.maxval*scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+        maxval = data_view.maxval/scale_factor
+    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        maxval = data_view.maxval
+        
+    return maxval
+    

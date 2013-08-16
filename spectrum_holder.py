@@ -30,7 +30,9 @@ class SpectrumHolder(QtGui.QDialog):
         self.cube_peaks = []
         self.cube_spectra = []
         self.amplitudes = []
+        self.mu = []
         self.sigma = []
+        self.m = []
         self.widths = []
         self.cube_residuals = []
         self.cube_fitted = False
@@ -54,7 +56,12 @@ class SpectrumHolder(QtGui.QDialog):
         self.button_display_peak_amplitudes = QtGui.QPushButton("&Display Peak Amplitudes")
         self.button_display_peak_amplitudes.clicked.connect(self.display_peak_amplitudes)
         
+        self.button_display_peak_m = QtGui.QPushButton("&Display Peak M")
+        self.button_display_peak_m.clicked.connect(self.display_peak_m)
         
+        self.button_display_peak_mu = QtGui.QPushButton("&Display Peak Mu")
+        self.button_display_peak_mu.clicked.connect(self.display_peak_mu)
+             
         self.button_display_peak_sigma = QtGui.QPushButton("&Display Peak Sigmas")
         self.button_display_peak_sigma.clicked.connect(self.display_peak_sigma)
         
@@ -70,7 +77,9 @@ class SpectrumHolder(QtGui.QDialog):
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.label_cube_fitted)
         vbox.addWidget(self.button_display_peak_amplitudes)
+        vbox.addWidget(self.button_display_peak_mu)
         vbox.addWidget(self.button_display_peak_sigma)
+        vbox.addWidget(self.button_display_peak_m)
         vbox.addWidget(self.button_display_cube_residuals)
         
         grid.addLayout(vbox,0,1)
@@ -108,6 +117,50 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_amplitude.setLayout(vbox)
 
         self.window_amplitude.show()
+        
+    def display_peak_m(self):
+        if not self.cube_fitted:
+            self.cube_warning()
+            return                           
+        self.window_m = QtGui.QWidget()
+        self.window_m.setWindowTitle("Peak M's")
+        
+        self.window_m.fig = plt.figure(figsize=(8.0, 6.0))
+        self.window_m.canvas = FigureCanvas(self.window_m.fig)
+        self.window_m.canvas.setParent(self.window_m)
+        for i in np.arange(self.peak_count):
+
+            axes = plt.subplot(self.peak_count, 1, i)
+            axes.set_title("Peak Number %s"%str(i+1))            
+            plt.imshow(self.m[:,:,i], interpolation='nearest')
+            plt.colorbar()
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(self.window_m.canvas)
+        self.window_m.setLayout(vbox)
+
+        self.window_m.show()
+        
+    def display_peak_mu(self):
+        if not self.cube_fitted:
+            self.cube_warning()
+            return                           
+        self.window_mu = QtGui.QWidget()
+        self.window_mu.setWindowTitle("Peak Mu's")
+        
+        self.window_mu.fig = plt.figure(figsize=(8.0, 6.0))
+        self.window_mu.canvas = FigureCanvas(self.window_mu.fig)
+        self.window_mu.canvas.setParent(self.window_mu)
+        for i in np.arange(self.peak_count):
+
+            axes = plt.subplot(self.peak_count, 1, i)
+            axes.set_title("Peak Number %s"%str(i+1))            
+            plt.imshow(self.mu[:,:,i], interpolation='nearest')
+            plt.colorbar()
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(self.window_mu.canvas)
+        self.window_mu.setLayout(vbox)
+
+        self.window_mu.show()
     
     def display_peak_sigma(self):
         if not self.cube_fitted:
@@ -120,7 +173,8 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_sigma.canvas = FigureCanvas(self.window_sigma.fig)
         self.window_sigma.canvas.setParent(self.window_sigma)
         for i in np.arange(self.peak_count):
-            plt.subplot(self.peak_count, 1, i)
+            axes = plt.subplot(self.peak_count, 1, i)
+            axes.set_title("Peak Number %s"%str(i+1)) 
             plt.imshow(self.sigma[:,:,i], interpolation='nearest')
             plt.colorbar()
         vbox = QtGui.QVBoxLayout()
@@ -164,11 +218,31 @@ class SpectrumHolder(QtGui.QDialog):
         for spectrum in self.cube_peaks:
             for peak in spectrum:
                 self.amplitudes.append(peak['values'][0])
-            
+        print 'shape is', np.shape(self.amplitudes)
         self.amplitudes = np.reshape(self.amplitudes,
                                      (self.dimension1,
                                       self.dimension2,
                                       self.peak_count))
+                                      
+    def generate_m_picture(self):
+        for spectrum in self.cube_peaks:
+            for peak in spectrum:
+                self.m.append(peak['values'][3])
+            
+        self.m = np.reshape(self.m,
+                            (self.dimension1,
+                             self.dimension2,
+                             self.peak_count))
+                                      
+    def generate_mu_picture(self):
+        for spectrum in self.cube_peaks:
+            for peak in spectrum:
+                self.mu.append(peak['values'][1])
+            
+        self.mu = np.reshape(self.mu,
+                             (self.dimension1,
+                              self.dimension2,
+                              self.peak_count))
                                      
     def generate_residuals_picture(self):
         self.cube_residuals = np.reshape(self.cube_residuals,
@@ -181,9 +255,9 @@ class SpectrumHolder(QtGui.QDialog):
                 self.sigma.append(peak['values'][2])
             
         self.sigma = np.reshape(self.sigma,
-                                     (self.dimension1,
-                                      self.dimension2,
-                                      self.peak_count))
+                                (self.dimension1,
+                                 self.dimension2,
+                                 self.peak_count))
 
     def hide_window(self):
         self.hide()
@@ -196,7 +270,9 @@ class SpectrumHolder(QtGui.QDialog):
                 self.peak_count += 1
             break
         self.generate_amplitudes_picture()
+        self.generate_mu_picture()
         self.generate_sigma_picture() 
+        self.generate_m_picture()
         self.generate_residuals_picture()
         self.cube_fitted = True
         self.cube_fitting = False

@@ -32,6 +32,8 @@ from scipy import integrate
 
 import copy as module_copy
 
+import multiprocessing
+
 #### import project specific items ####
 
 #spectra fitting toolkit
@@ -382,9 +384,12 @@ class Form(QMainWindow):
     def fit_from_cube_spectra(self, spectrum, index):
         specifications = self.spectrum_holder.cube_spectra[index]
         spectrum.set_spec(specifications)
+        assert spectrum.E() != None
+        assert spectrum.nobg()!= None
         spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
     
     def fit_from_spectrum_holder(self, spectrum):
+        #locker = QtCore.QMutexLocker(self.spectrum_holder.cube_mutex)
         specifications = eval(self.spectrum_holder.spectrum_box)
         spectrum.set_spec(specifications)
         spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
@@ -400,18 +405,138 @@ class Form(QMainWindow):
                 self.fit_from_spectrum_holder(spectrum)
         self.on_show()
         
-    def fit_cube_from_spectrum_holder(self):
+    def fit_cube(self):
         if self.spectrum_holder.cube_fitting:
             self.stop_fit = True
-        self.threadPool.append( GenericThread(self.fit_cube_from_spectrum_holder_process))
+        self.threadPool.append( GenericThread(self.fit_cube_process))
         (rows,columns,slices) = np.shape(self.data.ycube[...])
         self.progress_bar = self.fit_cube_progress_bar(rows*columns)
         self.threadPool[len(self.threadPool)-1].start()
+        
+    def fit_cube2(self):
+        if self.spectrum_holder.cube_fitting:
+            self.stop_fit = True
+        self.thread_count = 1
+        (rows,columns,slices) = np.shape(self.data.ycube[...])
+        self.progress_bar = self.fit_cube_progress_bar(rows*columns)
+        self.progress_value = 0
+        self.fit_dictionary = {}
+        self.fit_count = 0
+        self.fit_jobs = []
+        row_start = 0
+        piece_size = np.ceil(rows/self.thread_count)
+        row_end = (row_start)+(piece_size)
+        for thread_number in np.arange(self.thread_count):
+            #p = multiprocessing.Process(target=self.fit_cube_process2,
+                                        #args=(row_start,
+                                              #row_end,
+                                              #thread_number,))
+            #self.fit_jobs.append(p)
+            #p.start()
+            self.threadPool.append( GenericThread(self.fit_cube_process2,
+                                                  row_start,
+                                                  row_end,
+                                                  thread_number))
+            self.threadPool[len(self.threadPool)-1].start()
+            row_start += piece_size
+            row_end += piece_size
+
+        
+    def fit_cube_process2(self,row_start, row_end,  thread_number):
+        #locker = QtCore.QMutexLocker(self.spectrum_holder.cube_mutex)
+        self.spectrum_holder.notify_cube_fitting()
+        (total_rows,total_columns,slices) = np.shape(self.data.ycube[...])
+        #self.progress_bar = self.fit_cube_progress_bar(rows*columns)
+        value = 0
+        self.stop_fit = False
+        row_count=0
+        rows_number = row_end-row_start
+        piece_peaks = []
+        piece_spectra = []
+        piece_residuals = []
+        
+        for i in np.arange(rows_number):
+            row = i+row_start
+            column_count = 0
+            for j in np.arange(total_columns):
+                column = j
+                peak_holder = DataHolder()
+                ydata = analysis.ydata_calc2(input_ydata=self.data.ycube[row,column,:],
+                                             input_xdata = self.data.xdata,
+                                             dtype=self.data.xdata_info['data_type'],
+                                             display_ev = self.display_ev)
+                peak_holder.load_from_mf1_cube(self.xdata[:],
+                                               ydata,
+                                               column,
+                                               row)
+                spectrum = peak_holder.get_spectrum(0)
+                if row_count == 0:   
+                    
+                    self.fit_from_spectrum_holder(spectrum)
+                    row_count = 1
+                    column_count = 1
+
+                elif column_count == 0:                 
+                    index = int(i*(total_columns-1))
+                    specifications = piece_spectra[index]
+                    spectrum.set_spec(specifications)
+                    spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
+                    column_count = 1
+
+                else:                    
+                    index = -1
+                    specifications = piece_spectra[index]
+                    spectrum.set_spec(specifications)
+                    spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
+
+                spectrum_peaks = []
+                for peak in spectrum.peaks.peak_list:
+                    spectrum_peaks.append(peak.get_spec())
+                piece_peaks.append(spectrum_peaks)
+                piece_spectra.append(spectrum.get_spec())
+                norm_int_res = self.get_normalized_integrated_residuals(spectrum)
+                piece_residuals.append(norm_int_res)
+                if self.stop_fit is True:
+                    return
+                self.increment_progress_bar()  
+        self.fit_dictionary[thread_number] = (piece_peaks, piece_spectra, piece_residuals)
+        self.increment_fit_count()
     
-    def fit_cube_from_spectrum_holder_process(self):
+    def assemble_fits(self, fit_dictionary):
+        cube_peaks = []
+        cube_spectra = []
+        cube_residuals = []
+        for thread_number in np.arange(self.thread_count):
+            (part_peaks,part_spectra, part_residuals) = fit_dictionary[thread_number]
+            if thread_number == 0:
+                cube_peaks = part_peaks
+                cube_spectra = part_spectra
+                cube_residuals = part_residuals
+            else:
+                cube_peaks = r_[cube_peaks,part_peaks]
+                cube_spectra = r_[cube_spectra,part_spectra]
+                cube_residuals = r_[cube_residuals,part_residuals]
+        return (cube_peaks, cube_spectra, cube_residuals)
+        
+    def increment_fit_count(self):
+        self.fit_count +=1
+        if self.fit_count == self.thread_count:
+            (cube_peaks, cube_spectra, cube_residuals) = self.assemble_fits(self.fit_dictionary)
+            self.spectrum_holder.cube_peaks = cube_peaks
+            self.spectrum_holder.cube_spectra = cube_spectra
+            self.spectrum_holder.cube_residuals = cube_residuals
+            self.progress_window.close()
+            self.spectrum_holder.notify_cube_fitted()
+            
+    def increment_progress_bar(self):
+        self.progress_value += 1
+        self.progress_bar.setValue(self.progress_value)
+        
+    def fit_cube_process(self):
         locker = QtCore.QMutexLocker(self.spectrum_holder.cube_mutex)
         self.spectrum_holder.notify_cube_fitting()
         (rows,columns,slices) = np.shape(self.data.ycube[...])
+        self.progress_bar = self.fit_cube_progress_bar(rows*columns)
 
         value = 0
         self.stop_fit = False
@@ -769,7 +894,7 @@ class Form(QMainWindow):
         self.button_show_spectrum_holder.clicked.connect(self.show_spectrum_holder)
         
         self.button_fit_cube_from_spectrum_holder = QPushButton("&Fit Cube From \n Spectrum Box")
-        self.button_fit_cube_from_spectrum_holder.clicked.connect(self.fit_cube_from_spectrum_holder)
+        self.button_fit_cube_from_spectrum_holder.clicked.connect(self.fit_cube)
 
         #action buttons layout
         mods_box = QGridLayout()

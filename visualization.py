@@ -21,10 +21,11 @@ class Visualization(HasTraits):
         engine.start()
         
     
-    def __init__(self,ycube, vmin_color, vmax_color):
+    def __init__(self,xdata, ycube):#, vmin_color, vmax_color):
+        self.xdata = xdata
         self.ycube = ycube
-        self.vmin_color = vmin_color
-        self.vmax_color = vmax_color
+        #self.x_scale = np.ones(np.shape(self.ycube[:,0,0]))
+        #self.y_scale = np.ones(np.shape(self.ycube[0,:,0]))
         
         self.initialize = True        
         self.update_plot()
@@ -34,9 +35,14 @@ class Visualization(HasTraits):
         self.iso_surface = self.engine.scenes[0].children[0].children[0].children[2]
         self.volume = self.engine.scenes[0].children[0].children[0].children[3]
         
-
-
-       
+    def align_z_coordinates(self, xdata):
+        """
+        aligns middle of xdata to origin 
+        """
+        middle = len(xdata)/2
+        middle_value = xdata[middle]
+        new_xdata = (xdata)-(middle_value)
+        return new_xdata
 
     def show_iso(self, check_state):
         self.iso_surface.actor.actor.visibility = check_state
@@ -51,32 +57,28 @@ class Visualization(HasTraits):
         self.plane2.actor.actor.visibility = check_state
         self.plane2.implicit_plane.widget.enabled = check_state
         
-    def show_volume(self, check_state):
-        self.volume.volume_mapper.cropping = not check_state
+    #def show_volume(self, check_state):
+        #self.volume.volume_mapper.cropping = not check_state
         
     @on_trait_change('scene.activated')
     def update_plot(self):
         data = self.ycube
+        
+        #r = tvtk.RectilinearGrid()
+        #r.point_data.scalars = data.ravel()
+        #r.point_data.scalars.name = 'scalars'
+        #r.dimensions = data.shape
+        #r.x_coordinates = self.x_scale
+        #r.y_coordinates = self.y_scale
+        #r.z_coordinates = self.align_z_coordinates(self.xdata)
         scalar_field_data = self.scene.mlab.pipeline.scalar_field(data)
         self.scene.mlab.pipeline.scalar_cut_plane(scalar_field_data,
-                                                    plane_orientation='y_axes')#,
-                                                    #slice_index=10, 
-                                                    #vmin=self.vmin_color,
-                                                    #vmax=self.vmax_color)
-        self.scene.mlab.pipeline.scalar_cut_plane(scalar_field_data,
-                                                    plane_orientation='z_axes')#,
-                                                    #slice_index=10,
-                                                    #vmin=self.vmin_color, 
-                                                    #vmax=self.vmax_color)  
+                                                  plane_orientation='y_axes')
         
-        self.scene.mlab.pipeline.iso_surface(scalar_field_data,
-                                             vmin = self.vmin_color,
-                                             vmax = self.vmax_color)
-                                                    
-        self.scene.mlab.pipeline.volume(scalar_field_data, 
-                                        vmin=self.vmin_color,
-                                        vmax=self.vmax_color)
-                        
+        self.scene.mlab.pipeline.scalar_cut_plane(scalar_field_data,
+                                                  plane_orientation='z_axes') 
+        self.scene.mlab.pipeline.iso_surface(scalar_field_data)
+
         self.scene.mlab.outline()
         
     view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene),
@@ -85,23 +87,23 @@ class Visualization(HasTraits):
                 )
 
 class MayaviQWidget(QtGui.QWidget):
-    def __init__(self,ycube, visualization_min_color, visualization_max_color, parent=None):
+    def __init__(self,xdata, ycube,parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.setWindowTitle('3D Data Visualization')
         layout = QtGui.QVBoxLayout(self)
 
-        self.visualization = Visualization(ycube,
-                                           visualization_min_color,
-                                           visualization_max_color)
+        self.visualization = Visualization(xdata, ycube)#,
+                                           #visualization_min_color,
+                                           #visualization_max_color)
         button_hide = QtGui.QPushButton('Close Window')
         button_hide.clicked.connect(self.hide_window)
         
         self.group_checkbox = QtGui.QGroupBox()  
         self.group_checkbox.setTitle("Display Objects")
           
-        self.checkbox_volume = QtGui.QCheckBox("Show Volume")
-        self.checkbox_volume.setChecked(True)
-        self.checkbox_volume.stateChanged.connect(self.show_volume)        
+        #self.checkbox_volume = QtGui.QCheckBox("Show Volume")
+        #self.checkbox_volume.setChecked(True)
+        #self.checkbox_volume.stateChanged.connect(self.show_volume)        
         
         self.checkbox_plane1 = QtGui.QCheckBox("Show Plane 1")
         self.checkbox_plane1.setChecked(True)
@@ -116,7 +118,7 @@ class MayaviQWidget(QtGui.QWidget):
         self.checkbox_iso.stateChanged.connect(self.show_iso)
         
         hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(self.checkbox_volume)
+        #hbox.addWidget(self.checkbox_volume)
         hbox.addWidget(self.checkbox_plane1)
         hbox.addWidget(self.checkbox_plane2)        
         hbox.addWidget(self.checkbox_iso)    

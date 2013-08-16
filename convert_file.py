@@ -23,6 +23,7 @@ import init_settings
 class ConvertToCubeReader():
     def __init__(self):
         self.convert_mutex = QtCore.QMutex()
+        self.progress_mutex = QtCore.QMutex()
         self.threadPool = []
         self.convert_mutex = QtCore.QMutex()
         self.stop_convert = False
@@ -107,6 +108,7 @@ class ConvertToCubeReader():
         """
         progress bar window with stop button
         """
+        locker = QtCore.QMutexLocker(self.progress_mutex)
         self.progress_window = QtGui.QWidget()
         self.progress_window.setWindowTitle("Conversion Progress")
         progress_bar = QtGui.QProgressBar()

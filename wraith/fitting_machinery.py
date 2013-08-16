@@ -3,6 +3,8 @@ import re
 from pylab import *
 from scipy.optimize import leastsq
 from fitting_functions import *
+from PySide import QtCore
+import copy
 
 ###########################################
 # Fitting machinery                        
@@ -195,6 +197,8 @@ class Peaks:
     """something will go here"""
     self.spectrum = spectrum
     self.peak_list = []
+    self.peaks_mutex = QtCore.QMutex()
+    
 
   def __getitem__(self, i):
     return self.peak_list[i]
@@ -248,9 +252,12 @@ class Peaks:
       values = values[peak.values.size:]
 
   def optimize_fit(self, E, spectrum):
+    #locker = QtCore.QMutexLocker(self.peaks_mutex)
     values = self.get_values()
-
+    print 'E shape is', np.shape(E)
+    print 'spectrum shape is', np.shape(spectrum)
     p = leastsq(self.residuals, values, args=(E, spectrum))
+    
 
     values = p[0]
 

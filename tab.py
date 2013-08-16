@@ -64,10 +64,8 @@ class Tab(QtGui.QWidget):
         self.canvas.setParent(self)            
         self.img_axes = self.fig.add_subplot(121)
         self.img = plot_tools.initialize_image(self.img_axes,
-                                               data = self.data,
-                                               data_view = self.data_view,
-                                               slice1=1,
-                                               maxval=self.maxval)
+                                               self.data,
+                                               self.data_view)
         self.marker, = self.img_axes.plot(0,0,'wo')
         self.cbar = plt.colorbar(self.img)
         self.set_color_bar_settings()
@@ -77,8 +75,7 @@ class Tab(QtGui.QWidget):
                                               #self.data_view)
         self.img2 = plot_tools.initialize_graph(self.graph_axes,
                                                 self.data,
-                                                self.data_view,
-                                                self.maxval)
+                                                self.data_view)
 
         # Create the navigation toolbar, tied to the canvas
         #
@@ -112,17 +109,17 @@ class Tab(QtGui.QWidget):
         self.button_visualization.clicked.connect(self.open_visualization)
         
         #visualization inputs
-        self.label_vmin_color = QtGui.QLabel('Min Color:')
-        self.textbox_vmin_color = QtGui.QLineEdit(str(self.data_view.vmin_color))
-        self.connect(self.textbox_vmin_color, 
-                     QtCore.SIGNAL('editingFinished ()'), 
-                     self.update_visualization_settings)
+        #self.label_vmin_color = QtGui.QLabel('Min Color:')
+        #self.textbox_vmin_color = QtGui.QLineEdit(str(self.data_view.vmin_color))
+        #self.connect(self.textbox_vmin_color, 
+                     #QtCore.SIGNAL('editingFinished ()'), 
+                     #self.update_visualization_settings)
                      
-        self.label_vmax_color= QtGui.QLabel('Max Color:')
-        self.textbox_vmax_color = QtGui.QLineEdit(str(self.data_view.vmax_color))
-        self.connect(self.textbox_vmax_color, 
-                     QtCore.SIGNAL('editingFinished ()'), 
-                     self.update_visualization_settings)
+        #self.label_vmax_color= QtGui.QLabel('Max Color:')
+        #self.textbox_vmax_color = QtGui.QLineEdit(str(self.data_view.vmax_color))
+        #self.connect(self.textbox_vmax_color, 
+                     #QtCore.SIGNAL('editingFinished ()'), 
+                     #self.update_visualization_settings)
                      
         self.label_vmin_slice = QtGui.QLabel()  
         self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
@@ -154,10 +151,10 @@ class Tab(QtGui.QWidget):
         hbox_visualization.addStretch(1)
         hbox_visualization.setDirection(QtGui.QBoxLayout.LeftToRight)
         hbox_visualization.addWidget(self.button_visualization)
-        hbox_visualization.addWidget(self.label_vmin_color)
-        hbox_visualization.addWidget(self.textbox_vmin_color)
-        hbox_visualization.addWidget(self.label_vmax_color)
-        hbox_visualization.addWidget(self.textbox_vmax_color)
+        #hbox_visualization.addWidget(self.label_vmin_color)
+        #hbox_visualization.addWidget(self.textbox_vmin_color)
+        #hbox_visualization.addWidget(self.label_vmax_color)
+        #hbox_visualization.addWidget(self.textbox_vmax_color)
         hbox_visualization.addWidget(self.label_vmin_slice)
         hbox_visualization.addWidget(self.textbox_vmin_slice)
         hbox_visualization.addWidget(self.label_vmax_slice)
@@ -265,23 +262,34 @@ class Tab(QtGui.QWidget):
         
         if self.val < .33:
             self.data_view.currentminvalcolor = clicked_number
-            self.img.set_clim(vmin=clicked_number)
+            min_color = analysis.colors_calc_min(clicked_number,
+                                                 self.data,
+                                                 self.data_view)
+            self.img.set_clim(vmin=min_color)
             print 'new min is ', self.data_view.currentminvalcolor
     
         elif self.val > .66:
             self.data_view.currentmaxvalcolor = clicked_number
-            self.img.set_clim(vmax=clicked_number)
+            max_color = analysis.colors_calc_max(clicked_number,
+                                                 self.data,
+                                                 self.data_view)
+            self.img.set_clim(vmax=max_color)
             print 'new max is ', self.data_view.currentmaxvalcolor
         else:
             self.colorwindow = color.ColorWindow()
             self.colorwindow.exec_()
+            
             if self.colorwindow.result() and self.colorwindow.maxcolor.text()!='':
                 self.data_view.currentmaxvalcolor = int(self.colorwindow.maxcolor.text())
-                self.img.set_clim(vmax=self.data_view.currentmaxvalcolor)
+                max_color, min_color = analysis.colors_calc(self.data,
+                                                            self.data_view)
+                self.img.set_clim(vmax=max_color)
                 print 'new max is', self.data_view.currentmaxvalcolor
             if self.colorwindow.result() and self.colorwindow.mincolor.text()!='':
                 self.data_view.currentminvalcolor = int(self.colorwindow.mincolor.text())
-                self.img.set_clim(vmin=self.data_view.currentminvalcolor)
+                max_color, min_color = analysis.colors_calc(self.data,
+                                                            self.data_view)
+                self.img.set_clim(vmin=min_color)
                 print 'new min is', self.data_view.currentminvalcolor
             if self.colorwindow.resetvalue:
                 self.reset_colors()
@@ -316,14 +324,17 @@ class Tab(QtGui.QWidget):
         self.press = False
     
     def open_visualization(self):
+        xdata = analysis.xdata_calc(self.data, self.data_view)
         try:
-            self.visualization_window = visualization.MayaviQWidget(self.data.ycube[:,:,self.data_view.vmax_slice:self.data_view.vmin_slice],
-                                                                self.data_view.vmin_color,
-                                                                self.data_view.vmax_color)
+            self.visualization_window = visualization.MayaviQWidget(xdata,
+                                                                    self.data.ycube[:,:,self.data_view.vmax_slice:self.data_view.vmin_slice])#,
+                                                                #self.data_view.vmin_color,
+                                                                #self.data_view.vmax_color)
         except ValueError:
-            self.visualization_window = visualization.MayaviQWidget(self.data.ycube[:,:,self.data_view.vmin_slice:self.data_view.vmax_slice],
-                                                                self.data_view.vmin_color,
-                                                                self.data_view.vmax_color)
+            self.visualization_window = visualization.MayaviQWidget(xdata,
+                                                                    self.data.ycube[:,:,self.data_view.vmin_slice:self.data_view.vmax_slice])#,
+                                                                #self.data_view.vmin_color,
+                                                                #self.data_view.vmax_color)
         self.visualization_window.show()
     def open_wraith(self):
         xdata = analysis.xdata_calc(self.data, self.data_view)
@@ -335,7 +346,8 @@ class Tab(QtGui.QWidget):
         self.wraith_window.show()                                                  
        
     def reset_colors(self):
-        self.img.set_clim(0, self.maxval)
+        maxval = analysis.maxval_calc(self.data, self.data_view)
+        self.img.set_clim(0, maxval)
         self.data_view.currentmaxvalcolor = self.maxval
         print 'new max is', self.data_view.currentmaxvalcolor
         self.data_view.currentminvalcolor = 0
@@ -390,8 +402,8 @@ class Tab(QtGui.QWidget):
         """
         updates data view to have correct values from text boxes.
         """
-        self.data_view.vmin_color = float(self.textbox_vmin_color.text())
-        self.data_view.vmax_color = float(self.textbox_vmax_color.text())
+        #self.data_view.vmin_color = float(self.textbox_vmin_color.text())
+        #self.data_view.vmax_color = float(self.textbox_vmax_color.text())
         min_slice = float(self.textbox_vmin_slice.text())
         max_slice = float(self.textbox_vmax_slice.text())
         if self.data_view.display_ev:

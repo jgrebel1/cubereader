@@ -254,8 +254,6 @@ class Peaks:
   def optimize_fit(self, E, spectrum):
     #locker = QtCore.QMutexLocker(self.peaks_mutex)
     values = self.get_values()
-    print 'E shape is', np.shape(E)
-    print 'spectrum shape is', np.shape(spectrum)
     p = leastsq(self.residuals, values, args=(E, spectrum))
     
 

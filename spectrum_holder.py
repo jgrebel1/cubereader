@@ -28,7 +28,6 @@ class SpectrumHolder(QtGui.QDialog):
         self.dimension2 = dimension2
         self.spectrum_box = ''
         self.cube_peaks = []
-        self.cube_spectra = []
         self.amplitudes = []
         self.mu = []
         self.sigma = []
@@ -207,7 +206,9 @@ class SpectrumHolder(QtGui.QDialog):
         self.cube_peaks = []
         self.cube_residuals = []
         self.amplitudes = []
+        self.mu = []
         self.sigma = []
+        self.m = []
         
      
     def empty_spectrum_box(self):
@@ -218,7 +219,6 @@ class SpectrumHolder(QtGui.QDialog):
         for spectrum in self.cube_peaks:
             for peak in spectrum:
                 self.amplitudes.append(peak['values'][0])
-        print 'shape is', np.shape(self.amplitudes)
         self.amplitudes = np.reshape(self.amplitudes,
                                      (self.dimension1,
                                       self.dimension2,

@@ -130,7 +130,7 @@ class ConvertToCubeReader():
         self.progress_window.close()        
         
     def update_progress(self, value):
-        #update less freqently if it slows down process
+        #update progress bar less freqently if it slows down process
         if value%10 == 0:
             self.progress_bar.setValue(value)   
         
@@ -149,12 +149,13 @@ class ConvertToCubeReader():
             self.temp_hdf5 = h5py.File(output_filename+'temporary','w')
             list_xdata = self.read_into_cube(fid, self.temp_hdf5, global_bool, dimension1,
                                         dimension2)
-            self.progress_window.close()
+
         if not self.stop_convert:
             self.generate_output(output_filename, self.temp_hdf5, global_bool, header,
                             list_xdata)
             self.temp_hdf5.close()
             os.remove(output_filename+'temporary')
+        self.progress_window.close()            
        
     def build_xdata(self, data_holder, temp_hdf5, global_bool, list_xdata):
         """

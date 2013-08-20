@@ -70,9 +70,6 @@ class Tab(QtGui.QWidget):
         self.cbar = plt.colorbar(self.img)
         self.set_color_bar_settings()
         self.graph_axes = self.fig.add_subplot(122)  
-        #self.img2 = plot_tools.change_display(self.graph_axes,
-                                              #self.data,
-                                              #self.data_view)
         self.img2 = plot_tools.initialize_graph(self.graph_axes,
                                                 self.data,
                                                 self.data_view)
@@ -87,6 +84,11 @@ class Tab(QtGui.QWidget):
                                   QtGui.QSizePolicy.Expanding)      
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.set_slider_settings()
+        
+        self.button_display_header = QtGui.QPushButton('Display Header')
+        self.button_display_header.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+                                               QtGui.QSizePolicy.Fixed)
+        self.button_display_header.clicked.connect(self.display_header)
         
         self.button_export_spectrum = QtGui.QPushButton('Export Spectrum')
         self.button_export_spectrum.setSizePolicy(QtGui.QSizePolicy.Fixed, 
@@ -107,19 +109,6 @@ class Tab(QtGui.QWidget):
         self.button_visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
                                          QtGui.QSizePolicy.Fixed)
         self.button_visualization.clicked.connect(self.open_visualization)
-        
-        #visualization inputs
-        #self.label_vmin_color = QtGui.QLabel('Min Color:')
-        #self.textbox_vmin_color = QtGui.QLineEdit(str(self.data_view.vmin_color))
-        #self.connect(self.textbox_vmin_color, 
-                     #QtCore.SIGNAL('editingFinished ()'), 
-                     #self.update_visualization_settings)
-                     
-        #self.label_vmax_color= QtGui.QLabel('Max Color:')
-        #self.textbox_vmax_color = QtGui.QLineEdit(str(self.data_view.vmax_color))
-        #self.connect(self.textbox_vmax_color, 
-                     #QtCore.SIGNAL('editingFinished ()'), 
-                     #self.update_visualization_settings)
                      
         self.label_vmin_slice = QtGui.QLabel()  
         self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
@@ -144,6 +133,7 @@ class Tab(QtGui.QWidget):
         hbox.addWidget(left_spacer)
         hbox.addWidget(self.slider)
         vbox.addLayout(hbox)
+        vbox.addWidget(self.button_display_header)
         vbox.addWidget(self.button_export_spectrum)
         vbox.addWidget(self.button_export_cube)
         vbox.addWidget(self.button_wraith)
@@ -151,10 +141,6 @@ class Tab(QtGui.QWidget):
         hbox_visualization.addStretch(1)
         hbox_visualization.setDirection(QtGui.QBoxLayout.LeftToRight)
         hbox_visualization.addWidget(self.button_visualization)
-        #hbox_visualization.addWidget(self.label_vmin_color)
-        #hbox_visualization.addWidget(self.textbox_vmin_color)
-        #hbox_visualization.addWidget(self.label_vmax_color)
-        #hbox_visualization.addWidget(self.textbox_vmax_color)
         hbox_visualization.addWidget(self.label_vmin_slice)
         hbox_visualization.addWidget(self.textbox_vmin_slice)
         hbox_visualization.addWidget(self.label_vmax_slice)
@@ -202,6 +188,13 @@ class Tab(QtGui.QWidget):
                      self.update_image_from_slider)
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
+                                               
+    def display_header(self):
+        try:
+            msg = self.data.header
+            QtGui.QMessageBox.about(self, "Header for %s"%self.basename, msg.strip()) 
+        except:
+            print 'File has no header'
                      
     def export_spectrum(self):
         """
@@ -232,7 +225,7 @@ class Tab(QtGui.QWidget):
         textbox_vmax_slice.setText(str(xdata[-1]))
                     
     def make_spectrum_holder(self):
-        self.spectrum_holder = spectrum_holder.SpectrumHolder(self.basename, self.dimension1, self.dimension2)
+        self.spectrum_holder = spectrum_holder.SpectrumHolder(self.filename, self.dimension1, self.dimension2)
         
         
         
@@ -255,43 +248,39 @@ class Tab(QtGui.QWidget):
         the lower third sets min color value, and the middle pops up a
         window asking for custom values.
         """
-        self.val = event.mouseevent.ydata
-        clicked_number = (self.val*(self.data_view.currentmaxvalcolor
-                                         -self.data_view.currentminvalcolor)
-                               +self.data_view.currentminvalcolor)
+        val = event.mouseevent.ydata
+        clicked_number = (val*(self.data_view.maxcolor
+                                         -self.data_view.mincolor)
+                               +self.data_view.mincolor)
         
-        if self.val < .33:
-            self.data_view.currentminvalcolor = clicked_number
+        if val < .33:
+            self.data_view.mincolor = clicked_number
             min_color = analysis.colors_calc_min(clicked_number,
                                                  self.data,
                                                  self.data_view)
             self.img.set_clim(vmin=min_color)
-            print 'new min is ', self.data_view.currentminvalcolor
+            print 'new min is ', self.data_view.mincolor
     
-        elif self.val > .66:
-            self.data_view.currentmaxvalcolor = clicked_number
+        elif val > .66:
+            self.data_view.maxcolor = clicked_number
             max_color = analysis.colors_calc_max(clicked_number,
                                                  self.data,
                                                  self.data_view)
             self.img.set_clim(vmax=max_color)
-            print 'new max is ', self.data_view.currentmaxvalcolor
+            print 'new max is ', self.data_view.maxcolor
         else:
-            self.colorwindow = color.ColorWindow()
-            self.colorwindow.exec_()
+            colorwindow = color.ColorWindow()
+            colorwindow.exec_()
             
-            if self.colorwindow.result() and self.colorwindow.maxcolor.text()!='':
-                self.data_view.currentmaxvalcolor = int(self.colorwindow.maxcolor.text())
-                max_color, min_color = analysis.colors_calc(self.data,
-                                                            self.data_view)
-                self.img.set_clim(vmax=max_color)
-                print 'new max is', self.data_view.currentmaxvalcolor
-            if self.colorwindow.result() and self.colorwindow.mincolor.text()!='':
-                self.data_view.currentminvalcolor = int(self.colorwindow.mincolor.text())
-                max_color, min_color = analysis.colors_calc(self.data,
-                                                            self.data_view)
-                self.img.set_clim(vmin=min_color)
-                print 'new min is', self.data_view.currentminvalcolor
-            if self.colorwindow.resetvalue:
+            if colorwindow.result() and colorwindow.maxcolor.text()!='':
+                self.data_view.maxcolor = int(colorwindow.maxcolor.text())
+                self.img.set_clim(vmax=self.data_view.maxcolor)
+                print 'new max is', self.data_view.maxcolor
+            if colorwindow.result() and colorwindow.mincolor.text()!='':
+                self.data_view.mincolor = int(colorwindow.mincolor.text())
+                self.img.set_clim(vmin=self.data_view.mincolor)
+                print 'new min is', self.data_view.mincolor
+            if colorwindow.resetvalue:
                 self.reset_colors()
         self.canvas.draw()      
         
@@ -328,13 +317,11 @@ class Tab(QtGui.QWidget):
         try:
             self.visualization_window = visualization.MayaviQWidget(xdata,
                                                                     self.data.ycube[:,:,self.data_view.vmax_slice:self.data_view.vmin_slice])#,
-                                                                #self.data_view.vmin_color,
-                                                                #self.data_view.vmax_color)
+
         except ValueError:
             self.visualization_window = visualization.MayaviQWidget(xdata,
                                                                     self.data.ycube[:,:,self.data_view.vmin_slice:self.data_view.vmax_slice])#,
-                                                                #self.data_view.vmin_color,
-                                                                #self.data_view.vmax_color)
+
         self.visualization_window.show()
     def open_wraith(self):
         xdata = analysis.xdata_calc(self.data, self.data_view)
@@ -348,14 +335,14 @@ class Tab(QtGui.QWidget):
     def reset_colors(self):
         maxval = analysis.maxval_calc(self.data, self.data_view)
         self.img.set_clim(0, maxval)
-        self.data_view.currentmaxvalcolor = self.maxval
-        print 'new max is', self.data_view.currentmaxvalcolor
+        self.data_view.maxcolor = self.maxval
+        print 'new max is', self.data_view.maxcolor
         self.data_view.currentminvalcolor = 0
-        print 'new min is', self.data_view.currentminvalcolor               
+        print 'new min is', self.data_view.mincolor               
                 
     def set_color_bar_settings(self):
-        self.data_view.currentmaxvalcolor = self.maxval
-        self.data_view.currentminvalcolor = 0
+        self.data_view.maxcolor = self.maxval
+        self.data_view.mincolor = 0
         self.cbar.ax.set_picker(5) 
         
     def set_slider_settings(self):
@@ -402,8 +389,6 @@ class Tab(QtGui.QWidget):
         """
         updates data view to have correct values from text boxes.
         """
-        #self.data_view.vmin_color = float(self.textbox_vmin_color.text())
-        #self.data_view.vmax_color = float(self.textbox_vmax_color.text())
         min_slice = float(self.textbox_vmin_slice.text())
         max_slice = float(self.textbox_vmax_slice.text())
         if self.data_view.display_ev:

@@ -24,6 +24,7 @@ import menu_tools
 import convert_file
 import header
 import rebin_hdf5
+import open_cube_fit
 
 
 class AppForm(QtGui.QMainWindow):
@@ -64,6 +65,8 @@ class AppForm(QtGui.QMainWindow):
                                          shortcut="Ctrl+N",
                                          tip="Open a New HDF5 File"
                                          )
+        open_fit_action = menu_tools.create_action(self, "&Open Cube Fit",
+                                                   slot=self.open_fit)
         convert_action = menu_tools.create_action(self, "&Convert File",
                                             slot=convert_file.ConvertToCubeReader,
                                             shortcut="Ctrl+A",
@@ -78,8 +81,9 @@ class AppForm(QtGui.QMainWindow):
         rebin_action = menu_tools.create_action(self, "&Rebin HDF5",
                                                 slot=rebin_hdf5.RebinHDF5)
         menu_tools.add_actions(self, self.file_menu, 
-            (open_action,convert_action, control_action,
-             rebin_action,None, quit_action))
+                               (open_action,open_fit_action,
+                                convert_action, control_action,
+                                rebin_action,None, quit_action))
         
         self.help_menu = self.menuBar().addMenu("&Help")
         about_action = menu_tools.create_action(self, "&About", 
@@ -114,6 +118,22 @@ class AppForm(QtGui.QMainWindow):
             if filename:
                 basename = analysis.get_file_basename(filename)   
                 newtab = tab.Tab(filename)         
+                newtab.setWindowTitle('%s' %basename)
+                self.tab.addTab(newtab, '%s' %basename)
+            else:
+                print 'No file selected'
+                
+    def open_fit(self):
+        """opens a cube fit in a new tab"""
+        dialog = QtGui.QFileDialog(self)
+        dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
+        dialog.setNameFilter('HDF5 (*.hdf5)')
+        if dialog.exec_():
+            filenames = dialog.selectedFiles()
+        for filename in filenames:
+            if filename:
+                basename = analysis.get_file_basename(filename)   
+                newtab = open_cube_fit.CubeFit(filename)         
                 newtab.setWindowTitle('%s' %basename)
                 self.tab.addTab(newtab, '%s' %basename)
             else:

@@ -9,6 +9,8 @@ import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import h5py
+
 from PySide import QtCore
 from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
@@ -16,12 +18,20 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 
 
+#project specific items
+
+import analysis
+import fit_analysis
+
+
 class SpectrumHolder(QtGui.QDialog):
     """
     Holds peaks 
     """
-    def __init__(self, basename, dimension1, dimension2):
+    def __init__(self, filename, dimension1, dimension2):
         super(SpectrumHolder, self).__init__()
+        self.filename = filename
+        basename = analysis.get_file_basename(filename)
         self.setWindowTitle('Spectrum Holder for %s'%basename)
         self.resize(600,300)
         self.dimension1 = dimension1
@@ -67,6 +77,9 @@ class SpectrumHolder(QtGui.QDialog):
         self.button_display_cube_residuals = QtGui.QPushButton("&Display Cube Residuals")
         self.button_display_cube_residuals.clicked.connect(self.display_cube_residuals)
         
+        self.button_save_cube = QtGui.QPushButton("&Save Cube")
+        self.button_save_cube.clicked.connect(self.save_cube)
+        
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
         
@@ -80,11 +93,19 @@ class SpectrumHolder(QtGui.QDialog):
         vbox.addWidget(self.button_display_peak_sigma)
         vbox.addWidget(self.button_display_peak_m)
         vbox.addWidget(self.button_display_cube_residuals)
+        vbox.addWidget(self.button_save_cube)
         
         grid.addLayout(vbox,0,1)
         
         
         self.setLayout(grid)
+        
+    def count_peaks(self, cube_peaks):
+        spectrum = cube_peaks[0]
+        peak_count = 0            
+        for peak in spectrum:
+            peak_count += 1
+        return peak_count
         
     def cube_warning(self):
         msg = """
@@ -98,88 +119,77 @@ class SpectrumHolder(QtGui.QDialog):
     def display_peak_amplitudes(self):
         if not self.cube_fitted:
             self.cube_warning()
-            return                           
+            return    
+            
         self.window_amplitude = QtGui.QWidget()
-        self.window_amplitude.setWindowTitle("Peak Amplitudes")
-        
+        self.window_amplitude.setWindowTitle("Peak Amplitudes")       
         self.window_amplitude.fig = plt.figure(figsize=(8.0, 6.0))
         self.window_amplitude.canvas = FigureCanvas(self.window_amplitude.fig)
         self.window_amplitude.canvas.setParent(self.window_amplitude)
-        for i in np.arange(self.peak_count):
-
-            axes = plt.subplot(self.peak_count, 1, i)
-            axes.set_title("Peak Number %s"%str(i+1))            
-            plt.imshow(self.amplitudes[:,:,i], interpolation='nearest')
-            plt.colorbar()
+        
+        image_cube = self.amplitudes
+        self.plot_peaks(image_cube, self.peak_count)
+            
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.window_amplitude.canvas)
         self.window_amplitude.setLayout(vbox)
-
         self.window_amplitude.show()
         
     def display_peak_m(self):
         if not self.cube_fitted:
             self.cube_warning()
-            return                           
+            return 
+                          
         self.window_m = QtGui.QWidget()
-        self.window_m.setWindowTitle("Peak M's")
-        
+        self.window_m.setWindowTitle("Peak M's")        
         self.window_m.fig = plt.figure(figsize=(8.0, 6.0))
         self.window_m.canvas = FigureCanvas(self.window_m.fig)
         self.window_m.canvas.setParent(self.window_m)
-        for i in np.arange(self.peak_count):
-
-            axes = plt.subplot(self.peak_count, 1, i)
-            axes.set_title("Peak Number %s"%str(i+1))            
-            plt.imshow(self.m[:,:,i], interpolation='nearest')
-            plt.colorbar()
+        
+        image_cube = self.m
+        self.plot_peaks(image_cube, self.peak_count)
+        
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.window_m.canvas)
         self.window_m.setLayout(vbox)
-
         self.window_m.show()
         
     def display_peak_mu(self):
         if not self.cube_fitted:
             self.cube_warning()
-            return                           
+            return     
+                      
         self.window_mu = QtGui.QWidget()
-        self.window_mu.setWindowTitle("Peak Mu's")
-        
+        self.window_mu.setWindowTitle("Peak Mu's")        
         self.window_mu.fig = plt.figure(figsize=(8.0, 6.0))
         self.window_mu.canvas = FigureCanvas(self.window_mu.fig)
         self.window_mu.canvas.setParent(self.window_mu)
-        for i in np.arange(self.peak_count):
 
-            axes = plt.subplot(self.peak_count, 1, i)
-            axes.set_title("Peak Number %s"%str(i+1))            
-            plt.imshow(self.mu[:,:,i], interpolation='nearest')
-            plt.colorbar()
+        image_cube = self.mu
+        self.plot_peaks(image_cube, self.peak_count)
+
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.window_mu.canvas)
         self.window_mu.setLayout(vbox)
-
         self.window_mu.show()
     
     def display_peak_sigma(self):
         if not self.cube_fitted:
             self.cube_warning()
-            return                                     
+            return        
+                             
         self.window_sigma = QtGui.QWidget()
-        self.window_sigma.setWindowTitle("Peak Sigmas")
-        
+        self.window_sigma.setWindowTitle("Peak Sigmas")        
         self.window_sigma.fig = plt.figure(figsize=(8.0, 6.0))
         self.window_sigma.canvas = FigureCanvas(self.window_sigma.fig)
         self.window_sigma.canvas.setParent(self.window_sigma)
-        for i in np.arange(self.peak_count):
-            axes = plt.subplot(self.peak_count, 1, i)
-            axes.set_title("Peak Number %s"%str(i+1)) 
-            plt.imshow(self.sigma[:,:,i], interpolation='nearest')
-            plt.colorbar()
+        
+        image_cube = self.sigma
+        self.plot_peaks(image_cube, self.peak_count)
+            
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.window_sigma.canvas)
         self.window_sigma.setLayout(vbox)
-
         self.window_sigma.show()
     
     def display_cube_residuals(self):
@@ -258,17 +268,24 @@ class SpectrumHolder(QtGui.QDialog):
                                 (self.dimension1,
                                  self.dimension2,
                                  self.peak_count))
+    
+    def get_image_cube(self, variable):
+        if variable == 'A':
+            image_cube = self.amplitudes
+        elif variable == '\\mu':
+            image_cube = self.mu
+        elif variable == '\\sigma':
+            image_cube = self.sigma
+        elif variable == 'm':
+            image_cube = self.m
+        return image_cube
 
     def hide_window(self):
         self.hide()
     
     def notify_cube_fitted(self):
         self.label_cube_fitted.setText("Cube Box Loaded")
-        for spectrum in self.cube_peaks:
-            self.peak_count = 0            
-            for peak in spectrum:
-                self.peak_count += 1
-            break
+        self.peak_count = self.count_peaks(self.cube_peaks)
         self.generate_amplitudes_picture()
         self.generate_mu_picture()
         self.generate_sigma_picture() 
@@ -282,7 +299,54 @@ class SpectrumHolder(QtGui.QDialog):
         self.empty_cube_box()
         self.textbox_spectrum_box.setReadOnly(True)
         self.cube_fitting = True
-       
+        
+    def plot_peaks(self, image_cube, peak_count):
+        for peak_number in np.arange(peak_count):
+            axes = plt.subplot(1, peak_count, peak_number)
+            axes.set_title("Peak Number %s"%str(peak_number+1))
+            image = fit_analysis.get_image_from_cube(image_cube, peak_number)
+            plt.imshow(image, interpolation='nearest')
+            plt.colorbar()
+            
+    def save_cube(self):
+        if not self.cube_fitted:
+            self.cube_warning()
+            return
+        output_filename = fit_analysis.get_output_filename(self.filename)
+        self.save_cube_process(output_filename, self.cube_peaks, self.peak_count)
+
+    def save_cube_process(self, output_filename, cube_peaks, peak_count):
+        """
+        Saves the cube_fit as an hdf5 file
+        """           
+
+            
+        output_file = h5py.File(output_filename,'w')
+        output_file.attrs['peak_count'] = peak_count
+        peaks = output_file.create_group("peaks")
+        for peak in np.arange(peak_count):
+            peak_holder = peaks.create_group("Peak%d"%peak)
+            
+            peak_function = fit_analysis.get_peak_function(cube_peaks, peak)
+            peak_name = fit_analysis.get_peak_name(cube_peaks, peak)
+            peak_penalty_function = fit_analysis.get_peak_penalty_function(cube_peaks,peak)
+            peak_ranges = fit_analysis.get_peak_ranges(cube_peaks, peak)
+            peak_variables = fit_analysis.get_peak_variables(cube_peaks, peak)
+            peak_holder.attrs['function'] = peak_function
+            peak_holder.attrs['name'] = peak_name
+            peak_holder.attrs['penalty_function'] = peak_penalty_function
+            peak_holder.attrs['ranges'] = peak_ranges
+            peak_holder.attrs['variables'] = peak_variables
+            
+            for variable in peak_variables:
+                image_cube = self.get_image_cube(variable)
+                image = fit_analysis.get_image_from_cube(image_cube, peak)
+                peak_holder.create_dataset(variable, data=image)
+                
+        output_file.create_dataset("integrated_residuals",
+                                    data=self.cube_residuals)
+        output_file.close()
+                
     def stop_fit(self):
         self.cube_fitted = False
         self.cube_fitting = False

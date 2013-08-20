@@ -259,7 +259,7 @@ class Peaks:
 
     values = p[0]
 
-    print 'Optimized parameters: %s' % (p,)
+    #print 'Optimized parameters: %s' % (p,)
 
     self.set_values(values)
 

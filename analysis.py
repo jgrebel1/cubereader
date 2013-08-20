@@ -179,17 +179,17 @@ def colors_calc(data, data_view):
     """
     scale_factor = 600
     if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
-        max_color = data_view.currentmaxvalcolor
-        min_color = data_view.currentminvalcolor
+        max_color = data_view.maxcolor
+        min_color = data_view.mincolor
     elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        max_color = data_view.currentmaxvalcolor*scale_factor
-        min_color = data_view.currentminvalcolor*scale_factor
+        max_color = data_view.maxcolor*scale_factor
+        min_color = data_view.mincolor*scale_factor
     elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
-        max_color = data_view.currentmaxvalcolor/scale_factor
-        min_color = data_view.currentminvalcolor/scale_factor
+        max_color = data_view.maxcolor/scale_factor
+        min_color = data_view.mincolor/scale_factor
     elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        max_color = data_view.currentmaxvalcolor
-        min_color = data_view.currentminvalcolor
+        max_color = data_view.maxcolor
+        min_color = data_view.mincolor
 
     return max_color, min_color
     

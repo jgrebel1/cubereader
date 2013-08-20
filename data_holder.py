@@ -24,7 +24,20 @@ class Data():
             self.xdata = self.hdf5["Experiments/__unnamed__/xdata"][...]
             self.xdata_info['data_type'] = 'wavelength'
             self.xdata_info['reversed'] = True
+            self.header = self.hdf5['Experiments']['__unnamed__'].attrs['header']
         except:
             self.xdata = analysis.get_xdata(self.hdf5["Experiments/__unnamed__/axis-2"])
             self.xdata_info['data_type'] = 'ev'
             self.xdata_info['reversed'] = False
+            
+class FitData():
+    
+    def __init__(self, hdf5_file):
+        self.peaks = []        
+        self.load_data(hdf5_file)
+
+        
+    def load_data(self, hdf5_file):
+        self.hdf5 = h5py.File(hdf5_file, 'r')   
+        self.peaks = self.hdf5['peaks']
+        self.integrated_residuals = self.hdf5['integrated_residuals']

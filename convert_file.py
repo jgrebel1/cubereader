@@ -17,6 +17,7 @@ import default
 import cube_loader
 import analysis
 import init_settings
+import generic_thread
 
 
 
@@ -56,7 +57,7 @@ class ConvertToCubeReader():
                 print('Saving file: %s'%output_filename)
                 self.progress_bar = self.convert_progress_bar(dimension1*dimension2) 
                 
-                self.threadPool.append(GenericThread(self.convert_mf1,
+                self.threadPool.append(generic_thread.GenericThread(self.convert_mf1,
                                                      filename, 
                                                      output_filename,
                                                      dimension1, 
@@ -147,36 +148,32 @@ class ConvertToCubeReader():
         with open(input_filename,'rb') as fid:
             header=fid.read(2048)
             self.temp_hdf5 = h5py.File(output_filename+'temporary','w')
-            list_xdata = self.read_into_cube(fid, self.temp_hdf5, global_bool, dimension1,
-                                        dimension2)
+            list_xdata = self.read_into_cube(fid, self.temp_hdf5, global_bool,
+                                             dimension1,dimension2)
 
         if not self.stop_convert:
-            self.generate_output(output_filename, self.temp_hdf5, global_bool, header,
-                            list_xdata)
+            self.generate_output(output_filename, self.temp_hdf5, global_bool,
+                                 header,list_xdata)
             self.temp_hdf5.close()
             os.remove(output_filename+'temporary')
         self.progress_window.close()            
        
-    def build_xdata(self, data_holder, temp_hdf5, global_bool, list_xdata):
+    def build_xdata(self, data_holder, temp_hdf5, list_xdata):
         """
         builds the wavelength data (x data for graph). 
         """
-        if global_bool:
-            data_holder.create_dataset('xdata', data=list_xdata ) 
-        else:
-            data_holder.create_dataset('xdata',
-                                       data=temp_hdf5["cube"][0,0,0:1600])
+        data_holder.create_dataset('xdata', data=list_xdata )
         
     def build_ycube(self, data_holder, temp_hdf5, global_bool):
         """
-        builds a 3 dimensional array with intensity data
+        builds two 3 dimensional arrays with intensity data in wavelength
+        and ev
         """
         if global_bool:
-            data_holder.create_dataset('data',
-                                       data=temp_hdf5["cube"][:,:,0:1600])
+            ydata = temp_hdf5["cube"][:,:,0:1600]
         else:
-            data_holder.create_dataset('data', 
-                                       data=temp_hdf5["cube"][:,:,1600:3200])
+            ydata = temp_hdf5["cube"][:,:,1600:3200]
+        data_holder.create_dataset('data', data=ydata)
         
     def build_info(self):
         """
@@ -189,7 +186,7 @@ class ConvertToCubeReader():
             info = graph_array[:,3200:3264]
         info = info.transpose()
         return info
-        
+       
     def datasize_finder(self, input_filename, global_bool):
         'finds the data size in the mf1 file'
         fileinfo=os.stat(input_filename)
@@ -206,7 +203,7 @@ class ConvertToCubeReader():
         locker = QtCore.QMutexLocker(self.convert_mutex)
         output_file = h5py.File(output_filename,'w')
         data_holder = output_file.create_group("Experiments/__unnamed__")       
-        self.build_xdata(data_holder, temp_hdf5, global_bool, list_xdata)
+        self.build_xdata(data_holder, temp_hdf5, list_xdata)
         #self.info = self.build_info()
         self.build_ycube(data_holder, temp_hdf5, global_bool)
         self.write_header(data_holder, header)            
@@ -234,7 +231,7 @@ class ConvertToCubeReader():
                     current_spectrum = i*dimension2 + j
                     self.update_progress(current_spectrum)
         else:
-            list_xdata = None
+            
             cube = temp_hdf5.create_dataset('cube',(dimension1,
                                                     dimension2,
                                                     3264))  
@@ -246,25 +243,12 @@ class ConvertToCubeReader():
                         cube[i,j,:] = np.fromfile(file=fid, dtype='>f',
                                                   count=3264)
                     except:
+                        list_xdata = cube[0,0,0:1600]
                         return 
                     current_spectrum = i*dimension2 + j
                     self.update_progress(current_spectrum)
+            list_xdata = cube[0,0,0:1600]
         return list_xdata
-        
-                    
+                            
     def write_header(self, data_holder, header):
         data_holder.attrs['header'] = header        
-        
-class GenericThread(QtCore.QThread):
-    def __init__(self, function, *args, **kwargs):
-        QtCore.QThread.__init__(self)
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-
-    #def __del__(self):
-        #self.wait()
-
-    def run(self):
-        self.function(*self.args,**self.kwargs)
-        return

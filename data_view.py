@@ -18,8 +18,8 @@ class DataView():
         self.maxcolor = maxval
         self.mincolor = 0
         self.slider_val = 1
-        self.vmin_slice = 0
-        self.vmax_slice = number_of_slices - 1
+        self.vmin_wavelength = 300
+        self.vmax_wavelength = 800
         
 class FitDataView():
     """

@@ -32,7 +32,6 @@ class AppForm(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.setWindowTitle('Cube Reader')
-        
         self.create_menu()
         self.create_main_window()
         #self.create_status_bar()

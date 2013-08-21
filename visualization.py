@@ -21,56 +21,30 @@ class Visualization(HasTraits):
         engine.start()
         
     
-    def __init__(self,xdata, ycube):#, vmin_color, vmax_color):
-        self.xdata = xdata
-        self.ycube = ycube
-        #self.x_scale = np.ones(np.shape(self.ycube[:,0,0]))
-        #self.y_scale = np.ones(np.shape(self.ycube[0,:,0]))
-        
+    def __init__(self,ycube):
+        self.ycube = ycube       
         self.initialize = True        
         self.update_plot()
         
         self.plane1 = self.engine.scenes[0].children[0].children[0].children[0]
         self.plane2 = self.engine.scenes[0].children[0].children[0].children[1]
         self.iso_surface = self.engine.scenes[0].children[0].children[0].children[2]
-        self.volume = self.engine.scenes[0].children[0].children[0].children[3]
-        
-    def align_z_coordinates(self, xdata):
-        """
-        aligns middle of xdata to origin 
-        """
-        middle = len(xdata)/2
-        middle_value = xdata[middle]
-        new_xdata = (xdata)-(middle_value)
-        return new_xdata
 
     def show_iso(self, check_state):
         self.iso_surface.actor.actor.visibility = check_state
 
     def show_plane1(self, check_state):
-        #self.plane1.ipw.enabled = check_state
         self.plane1.actor.actor.visibility = check_state
         self.plane1.implicit_plane.widget.enabled = check_state
     
     def show_plane2(self, check_state):
-        #self.plane2.ipw.enabled = check_state
         self.plane2.actor.actor.visibility = check_state
         self.plane2.implicit_plane.widget.enabled = check_state
         
-    #def show_volume(self, check_state):
-        #self.volume.volume_mapper.cropping = not check_state
         
     @on_trait_change('scene.activated')
     def update_plot(self):
         data = self.ycube
-        
-        #r = tvtk.RectilinearGrid()
-        #r.point_data.scalars = data.ravel()
-        #r.point_data.scalars.name = 'scalars'
-        #r.dimensions = data.shape
-        #r.x_coordinates = self.x_scale
-        #r.y_coordinates = self.y_scale
-        #r.z_coordinates = self.align_z_coordinates(self.xdata)
         scalar_field_data = self.scene.mlab.pipeline.scalar_field(data)
         self.scene.mlab.pipeline.scalar_cut_plane(scalar_field_data,
                                                   plane_orientation='y_axes')
@@ -86,13 +60,14 @@ class Visualization(HasTraits):
                 resizable=True # We need this to resize with the parent widget
                 )
 
+
 class MayaviQWidget(QtGui.QWidget):
-    def __init__(self,xdata, ycube,parent=None):
+    def __init__(self,ycube,parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.setWindowTitle('3D Data Visualization')
         layout = QtGui.QVBoxLayout(self)
 
-        self.visualization = Visualization(xdata, ycube)#,
+        self.visualization = Visualization(ycube)#,
                                            #visualization_min_color,
                                            #visualization_max_color)
         button_hide = QtGui.QPushButton('Close Window')

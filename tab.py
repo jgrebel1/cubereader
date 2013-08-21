@@ -37,6 +37,7 @@ import wraith_for_cubereader
 import visualization
 import spectrum_holder
 import data_holder
+import convert_to_ev
 
 plt.ioff()
             
@@ -51,6 +52,7 @@ class Tab(QtGui.QWidget):
         self.maxval = analysis.find_maxval(self.data.ycube[...])
         self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.data.ycube) 
         self.data_view = data_view.DataView(self.maxval, self.number_of_slices)
+        self.convert_mutex = QtCore.QMutex()
         self.press = False
         self.make_spectrum_holder()
         self.make_frame()
@@ -109,6 +111,11 @@ class Tab(QtGui.QWidget):
         self.button_visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
                                          QtGui.QSizePolicy.Fixed)
         self.button_visualization.clicked.connect(self.open_visualization)
+        
+        self.button_make_ev_cube = QtGui.QPushButton('Make ev Cube')
+        self.button_make_ev_cube.setSizePolicy(QtGui.QSizePolicy.Fixed,
+                                         QtGui.QSizePolicy.Fixed)
+        self.button_make_ev_cube.clicked.connect(self.make_ev_cube)
                      
         self.label_vmin_slice = QtGui.QLabel()  
         self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
@@ -141,6 +148,7 @@ class Tab(QtGui.QWidget):
         hbox_visualization.addStretch(1)
         hbox_visualization.setDirection(QtGui.QBoxLayout.LeftToRight)
         hbox_visualization.addWidget(self.button_visualization)
+        hbox_visualization.addWidget(self.button_make_ev_cube)
         hbox_visualization.addWidget(self.label_vmin_slice)
         hbox_visualization.addWidget(self.textbox_vmin_slice)
         hbox_visualization.addWidget(self.label_vmax_slice)
@@ -160,16 +168,13 @@ class Tab(QtGui.QWidget):
                                                self.data,
                                                self.data_view)
                                                
-        if self.data_view.display_ev:
-            self.label_vmin_slice.setText('Min ev:')
-            self.label_vmax_slice.setText('Max ev:')
-        else:
-            self.label_vmin_slice.setText('Min Wavelength:')                    
-            self.label_vmax_slice.setText('Max Wavelength:')
-            
-        xdata = analysis.xdata_calc(self.data, self.data_view)    
-        self.textbox_vmin_slice.setText(str(xdata[self.data_view.vmin_slice]))     
-        self.textbox_vmax_slice.setText(str(xdata[self.data_view.vmax_slice]))     
+        min_label, max_label = analysis.v_labels(self.data_view)
+        min_text, max_text = analysis.v_text(self.data_view)
+        
+        self.label_vmin_slice.setText(min_label)           
+        self.label_vmax_slice.setText(max_label)               
+        self.textbox_vmin_slice.setText(min_text)     
+        self.textbox_vmax_slice.setText(max_text)     
         
     def close_tab(self):
         if self.tab.currentWidget().hdf5:
@@ -223,9 +228,24 @@ class Tab(QtGui.QWidget):
         xdata = analysis.xdata_calc(self.data, self.data_view)
         textbox_vmin_slice.setText(str(xdata[0]))
         textbox_vmax_slice.setText(str(xdata[-1]))
+        self.update_visualization_settings()
+
+    def make_ev_cube(self):
+        if not self.data.ev_ycube == []:
+            print 'ev cube already exists'
+            return
+        
+        convert_to_ev.ConvertEvCube(self.data.hdf5, self.data.xdata, 
+                                    self.dimension1, self.dimension2,
+                                    self.convert_mutex)
+        #locker = QtCore.QMutexLocker(self.convert_mutex)       
+        #self.data.ev_ycube = self.data.hdf5["Experiments/__unnamed__/ev_data"]
+        #self.data.ev_xdata = self.data.hdf5["Experiments/__unnamed__/ev_xdata"]
                     
     def make_spectrum_holder(self):
-        self.spectrum_holder = spectrum_holder.SpectrumHolder(self.filename, self.dimension1, self.dimension2)
+        self.spectrum_holder = spectrum_holder.SpectrumHolder(self.filename,
+                                                              self.dimension1,
+                                                              self.dimension2)
         
         
         
@@ -313,16 +333,21 @@ class Tab(QtGui.QWidget):
         self.press = False
     
     def open_visualization(self):
-        xdata = analysis.xdata_calc(self.data, self.data_view)
+
+        self.data.check_for_ev_cube(self.data.hdf5)
+        ycube = analysis.mayavi_cube(self.data, self.data_view)
+        if ycube == []:
+            print "No ev cube in file. Press Make ev Cube"
+            return
+        min_slice, max_slice = analysis.mayavi_slices(self.data,
+                                                      self.data_view)
         try:
-            self.visualization_window = visualization.MayaviQWidget(xdata,
-                                                                    self.data.ycube[:,:,self.data_view.vmax_slice:self.data_view.vmin_slice])#,
-
+            ycube_slice = ycube[:,:,min_slice:max_slice]
         except ValueError:
-            self.visualization_window = visualization.MayaviQWidget(xdata,
-                                                                    self.data.ycube[:,:,self.data_view.vmin_slice:self.data_view.vmax_slice])#,
-
+            ycube_slice = ycube[:,:,max_slice:min_slice]
+        self.visualization_window = visualization.MayaviQWidget(ycube_slice)
         self.visualization_window.show()
+        
     def open_wraith(self):
         xdata = analysis.xdata_calc(self.data, self.data_view)
         ydata = analysis.ydata_calc(self.data, self.data_view)
@@ -388,17 +413,14 @@ class Tab(QtGui.QWidget):
     def update_visualization_settings(self):
         """
         updates data view to have correct values from text boxes.
+        data_stores input values in wavelength.
         """
-        min_slice = float(self.textbox_vmin_slice.text())
-        max_slice = float(self.textbox_vmax_slice.text())
+        min_input = float(self.textbox_vmin_slice.text())
+        max_input = float(self.textbox_vmax_slice.text())
         if self.data_view.display_ev:
-            self.data_view.vmin_slice = analysis.ev_to_index(min_slice, 
-                                                             self.data)
-            self.data_view.vmax_slice = analysis.ev_to_index(max_slice,
-                                                             self.data)
+            self.data_view.vmin_wavelength = 1240/max_input
+            self.data_view.vmax_wavelength = 1240/min_input
         else:
-            self.data_view.vmin_slice = analysis.wavelength_to_index(min_slice, 
-                                                                     self.data)
-            self.data_view.vmax_slice = analysis.wavelength_to_index(max_slice,
-                                                                     self.data)
+            self.data_view.vmin_wavelength = min_input
+            self.data_view.vmax_wavelength = max_input
 

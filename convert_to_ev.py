@@ -103,8 +103,8 @@ class ConvertEvCube():
     def stop_conversion_now(self):
         self.stop_convert = True
         locker = QtCore.QMutexLocker(self.convert_mutex)
-        del self.hdf5['Experiments/__unnamed__/ev_data']
-        del self.hdf5['Experiments/__unnamed__/ev_xdata']
+        del self.hdf5_file['Experiments/__unnamed__/ev_data']
+        del self.hdf5_file['Experiments/__unnamed__/ev_xdata']
         self.progress_window.close()
         
     def update_progress(self, value):

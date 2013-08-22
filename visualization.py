@@ -67,18 +67,12 @@ class MayaviQWidget(QtGui.QWidget):
         self.setWindowTitle('3D Data Visualization')
         layout = QtGui.QVBoxLayout(self)
 
-        self.visualization = Visualization(ycube)#,
-                                           #visualization_min_color,
-                                           #visualization_max_color)
+        self.visualization = Visualization(ycube)
         button_hide = QtGui.QPushButton('Close Window')
         button_hide.clicked.connect(self.hide_window)
         
         self.group_checkbox = QtGui.QGroupBox()  
-        self.group_checkbox.setTitle("Display Objects")
-          
-        #self.checkbox_volume = QtGui.QCheckBox("Show Volume")
-        #self.checkbox_volume.setChecked(True)
-        #self.checkbox_volume.stateChanged.connect(self.show_volume)        
+        self.group_checkbox.setTitle("Display Objects")      
         
         self.checkbox_plane1 = QtGui.QCheckBox("Show Plane 1")
         self.checkbox_plane1.setChecked(True)
@@ -93,7 +87,6 @@ class MayaviQWidget(QtGui.QWidget):
         self.checkbox_iso.stateChanged.connect(self.show_iso)
         
         hbox = QtGui.QHBoxLayout()
-        #hbox.addWidget(self.checkbox_volume)
         hbox.addWidget(self.checkbox_plane1)
         hbox.addWidget(self.checkbox_plane2)        
         hbox.addWidget(self.checkbox_iso)    
@@ -125,22 +118,3 @@ class MayaviQWidget(QtGui.QWidget):
     def show_volume(self):
         value = self.checkbox_volume.isChecked()
         self.visualization.show_volume(value)
-
-"""
-if __name__ == "__main__":
-    app = QtGui.QApplication.instance()
-    container = QtGui.QWidget()
-    container.setWindowTitle("Embedding Mayavi in a PyQt4 Application")
-    layout = QtGui.QGridLayout(container)
-
-    mayavi_widget = MayaviQWidget(container)
-
-    layout.addWidget(mayavi_widget, 1, 1)
-    container.show()
-    window = QtGui.QMainWindow()
-    window.setCentralWidget(container)
-    window.show()
-
-    # Start the main event loop.
-    app.exec_()
-"""

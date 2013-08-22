@@ -238,9 +238,6 @@ class Tab(QtGui.QWidget):
         convert_to_ev.ConvertEvCube(self.data.hdf5, self.data.xdata, 
                                     self.dimension1, self.dimension2,
                                     self.convert_mutex)
-        #locker = QtCore.QMutexLocker(self.convert_mutex)       
-        #self.data.ev_ycube = self.data.hdf5["Experiments/__unnamed__/ev_data"]
-        #self.data.ev_xdata = self.data.hdf5["Experiments/__unnamed__/ev_xdata"]
                     
     def make_spectrum_holder(self):
         self.spectrum_holder = spectrum_holder.SpectrumHolder(self.filename,

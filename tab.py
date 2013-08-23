@@ -290,11 +290,11 @@ class Tab(QtGui.QWidget):
             colorwindow.exec_()
             
             if colorwindow.result() and colorwindow.maxcolor.text()!='':
-                self.data_view.maxcolor = int(colorwindow.maxcolor.text())
+                self.data_view.maxcolor = float(colorwindow.maxcolor.text())
                 self.img.set_clim(vmax=self.data_view.maxcolor)
                 print 'new max is', self.data_view.maxcolor
             if colorwindow.result() and colorwindow.mincolor.text()!='':
-                self.data_view.mincolor = int(colorwindow.mincolor.text())
+                self.data_view.mincolor = float(colorwindow.mincolor.text())
                 self.img.set_clim(vmin=self.data_view.mincolor)
                 print 'new min is', self.data_view.mincolor
             if colorwindow.resetvalue:

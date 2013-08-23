@@ -7,10 +7,32 @@ Created on Mon Aug 19 18:08:16 2013
 import os
 from PySide import QtGui
 from PySide import QtCore
+import numpy as np
 
 #project specific items
 
 import analysis
+
+def filter_current_image_from_residuals(min_filter, max_filter,
+                                        data, data_view):
+    image = get_image_from_data(data, data_view)
+    integrated_residuals = data.integrated_residuals
+    filtered_image = filter_from_residuals(min_filter, max_filter,
+                                           image, integrated_residuals)
+    return filtered_image
+
+def filter_from_residuals(min_filter, max_filter, image, image_residuals):
+    image_current = np.copy(image)
+    (rows, columns) = np.shape(image)
+    for row in np.arange(rows):
+        for column in np.arange(columns):
+            if image_residuals[row, column] > max_filter:
+                image_current[row, column] = 0
+            elif image_residuals[row, column] < min_filter:
+                image_current[row, column] = 0
+    return image_current
+            
+    
 
 def get_image_from_cube(image_cube, peak_number):
     image = image_cube[:,:,peak_number]

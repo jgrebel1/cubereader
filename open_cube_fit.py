@@ -16,7 +16,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as Naviga
 import h5py
 
 #project specific items
-
+import fit_analysis
 import fit_plot_tools
 import data_holder
 import data_view
@@ -61,18 +61,44 @@ class CubeFit(QtGui.QWidget):
         self.button_display_attributes = QtGui.QPushButton('Display Peak\nAttributes')
         self.button_display_attributes.clicked.connect(self.display_attributes)
         
+        self.label_min_filter = QtGui.QLabel('Min Filter')
+        self.textbox_min_filter = QtGui.QLineEdit(str(-1))
+
+        self.textbox_min_filter.editingFinished.connect(self.update_filter_settings)
+        
+        self.label_max_filter = QtGui.QLabel('Max Filter')
+        self.textbox_max_filter = QtGui.QLineEdit(str(1))
+        self.textbox_max_filter.editingFinished.connect(self.update_filter_settings)
+        
+        self.button_filter_from_residuals = QtGui.QPushButton('Filter From Residuals')
+        self.button_filter_from_residuals.clicked.connect(self.filter_from_residuals)
+        
+        
+                     
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
 
         vbox1 = QtGui.QVBoxLayout()
         vbox1.addWidget(self.mpl_toolbar)       
         vbox1.addWidget(self.canvas)
+       
+        filter_hbox1 = QtGui.QHBoxLayout()
+        filter_hbox1.addWidget(self.label_max_filter)
+        filter_hbox1.addWidget(self.textbox_max_filter)        
+                
+        filter_hbox2 = QtGui.QHBoxLayout()
+        filter_hbox2.addWidget(self.label_min_filter)
+        filter_hbox2.addWidget(self.textbox_min_filter)        
         
         vbox2 = QtGui.QVBoxLayout()
         vbox2.addWidget(self.dropdown_peaks)
         vbox2.addWidget(self.dropdown_variables)
         vbox2.addWidget(self.button_display_residuals)
         vbox2.addWidget(self.button_display_attributes)
+        vbox2.addLayout(filter_hbox1)
+        vbox2.addLayout(filter_hbox2)
+        vbox2.addWidget(self.button_filter_from_residuals)
+        
 
         
         grid.addLayout(vbox1,0,0)
@@ -101,12 +127,21 @@ class CubeFit(QtGui.QWidget):
                                 full_msg.strip()) 
                                 
     def display_residuals(self):
-        fit_plot_tools.plot_residuals(self.img, self.img_axes,
-                                      self.data, self.data_view)
-        
+        fit_plot_tools.set_image_from_residuals(self.img, self.img_axes,
+                                                self.data, self.data_view)
+                                      
+    def filter_from_residuals(self):
+        filtered_current_image = fit_analysis.filter_current_image_from_residuals(self.data_view.min_filter,
+                                                                                  self.data_view.max_filter,
+                                                                                  self.data,
+                                                                                  self.data_view)
+        fit_plot_tools.set_image_from_input(self.img, self.img_axes,
+                                            filtered_current_image,
+                                            self.data_view)
+    
     def peak_changed(self, index):
         self.data_view.current_peak = self.peak_list[index]
-        fit_plot_tools.plot_image(self.img, self.img_axes,
+        fit_plot_tools.set_image_from_data(self.img, self.img_axes,
                                   self.data, self.data_view)
         self.variable_list = self.get_variable_list(self.data, self.data_view)
         self.dropdown_variables.clear()
@@ -153,19 +188,36 @@ class CubeFit(QtGui.QWidget):
             colorwindow.exec_()
             
             if colorwindow.result() and colorwindow.maxcolor.text()!='':
-                self.data_view.maxcolor = int(colorwindow.maxcolor.text())
+                self.data_view.maxcolor = float(colorwindow.maxcolor.text())
                 self.img.set_clim(vmax=self.data_view.maxcolor)
                 print 'new max is', self.data_view.maxcolor
             if colorwindow.result() and colorwindow.mincolor.text()!='':
-                self.data_view.mincolor = int(colorwindow.mincolor.text())
+                self.data_view.mincolor = float(colorwindow.mincolor.text())
                 self.img.set_clim(vmin=self.data_view.mincolor)
                 print 'new min is', self.data_view.mincolor
             if colorwindow.resetvalue:
-                self.reset_colors()
+                self.reset_colors(self.img, self.data, self.data_view)
         self.canvas.draw()   
+        
+    def reset_colors(self, img, data, data_view):
+        image = fit_analysis.get_image_from_data(data, data_view)
+        data_view.mincolor = np.amin(image)
+        data_view.maxcolor = np.amax(image)
+        img.set_clim(data_view.mincolor, data_view.maxcolor)
+        
+    def update_filter_settings(self):
+        """
+        updates data view to have correct values from text boxes.
+        data_stores input values in wavelength.
+        """
+        min_filter = float(self.textbox_min_filter.text())
+        max_filter = float(self.textbox_max_filter.text())
+        self.data_view.min_filter = min_filter
+        self.data_view.max_filter = max_filter
+
         
     def variable_changed(self, index):
         self.data_view.current_variable = self.variable_list[index]
-        fit_plot_tools.plot_image(self.img, self.img_axes,
+        fit_plot_tools.set_image_from_data(self.img, self.img_axes,
                                   self.data, self.data_view)
         

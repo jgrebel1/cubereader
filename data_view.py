@@ -30,3 +30,5 @@ class FitDataView():
         self.current_variable = 'A'
         self.maxcolor = 100
         self.mincolor = 0
+        self.min_filter = -1
+        self.max_filter = 1

@@ -20,19 +20,18 @@ def initialize_image(axes, data, data_view):
     
     return img
     
-def plot_image(img, axes, data, data_view):
+def set_image_from_data(img, axes, data, data_view):
     image = fit_analysis.get_image_from_data(data, data_view)
+    set_image_from_input(img, axes, image, data_view)
+
+def set_image_from_input(img, axes, image, data_view):
     img.set_array(image)
     data_view.mincolor = np.amin(image)
     data_view.maxcolor = np.amax(image)
     img.set_clim(data_view.mincolor, data_view.maxcolor)
     img.figure.canvas.draw()
     
-def plot_residuals(img, axes, data, data_view):
+def set_image_from_residuals(img, axes, data, data_view):
     image = data.integrated_residuals
-    img.set_array(image)
-    data_view.mincolor = np.amin(image)
-    data_view.maxcolor = np.amax(image)
-    img.set_clim(data_view.mincolor, data_view.maxcolor)
-    img.figure.canvas.draw()
+    set_image_from_input(img, axes, image, data_view)
     

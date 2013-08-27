@@ -32,7 +32,12 @@ def filter_from_residuals(min_filter, max_filter, image, image_residuals):
                 image_current[row, column] = 0
     return image_current
             
-    
+def get_cube_filename(fit_filename):
+    dirname = os.path.dirname(fit_filename)
+    basename = os.path.basename(fit_filename)
+    cube_basename = basename[11:]
+    cube_filename = os.path.join(dirname, cube_basename)
+    return cube_filename    
 
 def get_image_from_cube(image_cube, peak_number):
     image = image_cube[:,:,peak_number]
@@ -46,8 +51,17 @@ def get_image_from_data(data, data_view):
 def get_output_filename(input_filename):
     hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
     basename = analysis.get_file_basename(input_filename)
-    full_basename = 'Peak_Fit-' + basename
-    output_filename = os.path.join(hdf5_directory, full_basename) +'.hdf5'
+    file_exists = True
+    count = 0
+    while file_exists == True:
+        basename = analysis.get_file_basename(input_filename)
+        full_basename = 'Peak_Fit%02d'%count + '-' + basename
+        output_filename = os.path.join(hdf5_directory, full_basename) +'.hdf5'
+        try:
+            with open(output_filename): pass
+            count += 1
+        except IOError:
+            file_exists = False            
     return output_filename
 
 def get_peak_function(cube_peaks, peak_number):
@@ -80,3 +94,31 @@ def get_peak_variables(cube_peaks, peak_number):
     peak = spectrum[peak_number]
     peak_variables = peak['variables']
     return peak_variables
+    
+def spectrum_from_data(peak_list, fit_data, cube_data_view):
+    x = cube_data_view.xcoordinate
+    y = cube_data_view.ycoordinate
+    spectrum = []
+    for peak in peak_list:
+        peak_holder = fit_data.peaks[peak]
+        function = peak_holder.attrs['function']
+        name = peak_holder.attrs['name']
+        penalty_function = peak_holder.attrs['penalty_function']
+        ranges = peak_holder.attrs['ranges']
+        variables = peak_holder.attrs['variables']
+        values = []
+        for variable in variables:
+            image = peak_holder[variable]
+            value = image[y, x]
+            values.append(value)
+        values = np.array(values)
+        peak_dict = {}
+        peak_dict['function'] = function
+        peak_dict['name'] = name
+        peak_dict['penalty_function'] = penalty_function
+        peak_dict['ranges'] = ranges
+        peak_dict['values'] = values
+        peak_dict['variables'] = variables
+        spectrum.append(peak_dict)
+    return spectrum
+        

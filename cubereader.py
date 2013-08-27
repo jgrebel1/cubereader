@@ -37,8 +37,18 @@ class AppForm(QtGui.QMainWindow):
         #self.create_status_bar()
          
     def close_tab(self):
-        if self.tab.currentWidget().data.hdf5:
-            self.tab.currentWidget().data.hdf5.close()
+        try:
+            if self.tab.currentWidget().data.hdf5:
+                self.tab.currentWidget().data.hdf5.close()
+        except:
+            pass
+        try:
+            if self.tab.currentWidget().cube_data.hdf5:
+                self.tab.currentWidget().cube_data.hdf5.close()
+            if self.tab.currentWidget().fit_data.hdf5:
+                self.tab.currentWidget().cube_data.hdf5.close()
+        except:
+            pass
         self.tab.removeTab(self.tab.currentIndex())             
         
     def control_panel_update(self):

@@ -285,6 +285,7 @@ class SpectrumHolder(QtGui.QDialog):
     
     def notify_cube_fitted(self):
         self.label_cube_fitted.setText("Cube Box Loaded")
+        self.sort_peaks(self.cube_peaks)
         self.peak_count = self.count_peaks(self.cube_peaks)
         self.generate_amplitudes_picture()
         self.generate_mu_picture()
@@ -346,6 +347,13 @@ class SpectrumHolder(QtGui.QDialog):
         output_file.create_dataset("integrated_residuals",
                                     data=self.cube_residuals)
         output_file.close()
+        
+    def sort_peaks(self, cube_peaks):
+        """
+        sorts peaks in spectra by energy or wavelength
+        """
+        for spectrum in cube_peaks:
+            spectrum.sort(key=lambda x: x['values'][1])
                 
     def stop_fit(self):
         self.cube_fitted = False

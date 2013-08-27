@@ -57,9 +57,17 @@ class RebinHDF5(QtGui.QMainWindow):
         
     def get_output_filename(self, input_file):
         hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
-        basename = analysis.get_file_basename(input_file)
-        full_basename = 'rebinned-' + basename
-        output_filename = os.path.join(hdf5_directory, full_basename) +'.hdf5'
+        file_exists = True
+        count = 0
+        while file_exists == True:
+            basename = analysis.get_file_basename(input_file)
+            full_basename = 'Rebinned%02d'%count + '-' + basename
+            output_filename = os.path.join(hdf5_directory, full_basename) +'.hdf5'
+            try:
+                with open(output_filename): pass
+                count += 1
+            except IOError:
+                file_exists = False
         return output_filename
         
     def rebin_hdf5(self, input_file, output_file, new_rows, new_columns):

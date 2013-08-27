@@ -38,6 +38,7 @@ import visualization
 import spectrum_holder
 import data_holder
 import convert_to_ev
+import navigation_tools
 
 plt.ioff()
             
@@ -53,7 +54,7 @@ class Tab(QtGui.QWidget):
         self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.data.ycube) 
         self.data_view = data_view.DataView(self.maxval, self.number_of_slices)
         self.convert_mutex = QtCore.QMutex()
-        self.press = False
+        self.bool_press = False
         self.make_spectrum_holder()
         self.make_frame()
  
@@ -158,6 +159,7 @@ class Tab(QtGui.QWidget):
         self.setLayout(vbox)
         
         self.connect_events()
+        self.connect_shortcuts()
 
 
     def change_display(self):
@@ -193,6 +195,23 @@ class Tab(QtGui.QWidget):
                      self.update_image_from_slider)
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
+                                               
+    def connect_shortcuts(self):
+        self.shortcut_up = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Up")),
+                                           self)
+        self.shortcut_up.activated.connect(self.move_up)
+        
+        self.shortcut_down = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Down")),
+                                           self)
+        self.shortcut_down.activated.connect(self.move_down)
+        
+        self.shortcut_left = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Left")),
+                                           self)
+        self.shortcut_left.activated.connect(self.move_left)
+        
+        self.shortcut_right = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Right")),
+                                           self)
+        self.shortcut_right.activated.connect(self.move_right)
                                                
     def display_header(self):
         try:
@@ -243,19 +262,34 @@ class Tab(QtGui.QWidget):
         self.spectrum_holder = spectrum_holder.SpectrumHolder(self.filename,
                                                               self.dimension1,
                                                               self.dimension2)
+                                                              
+    def move_down(self):
+        navigation_tools.move_down(self.data_view, self.dimension1)
+        self.update_graph()
         
-        
-        
+    
+    def move_left(self):
+        navigation_tools.move_left(self.data_view)
+        self.update_graph()
+    
+    def move_right(self):
+        navigation_tools.move_right(self.data_view, self.dimension2)
+        self.update_graph()
+      
+    def move_up(self):
+        navigation_tools.move_up(self.data_view)
+        self.update_graph()
+      
     def on_motion(self, event):        
         """
         dragging the marker will change the graph.
         """
-        if self.press is False: return
-        if event.inaxes != self.img.axes: return  
-        
-        self.data_view.xcoordinate = np.floor(event.xdata + .5)
-        self.data_view.ycoordinate = np.floor(event.ydata + .5)
+        if self.bool_press is False: return
+        if event.inaxes != self.img.axes: return
+    
+        navigation_tools.change_coordinates(event, self.data_view)
         self.update_graph()
+        self.canvas.draw()
 
         
     def on_pick_color(self, event):
@@ -265,40 +299,7 @@ class Tab(QtGui.QWidget):
         the lower third sets min color value, and the middle pops up a
         window asking for custom values.
         """
-        val = event.mouseevent.ydata
-        clicked_number = (val*(self.data_view.maxcolor
-                                         -self.data_view.mincolor)
-                               +self.data_view.mincolor)
-        
-        if val < .33:
-            self.data_view.mincolor = clicked_number
-            min_color = analysis.colors_calc_min(clicked_number,
-                                                 self.data,
-                                                 self.data_view)
-            self.img.set_clim(vmin=min_color)
-            print 'new min is ', self.data_view.mincolor
-    
-        elif val > .66:
-            self.data_view.maxcolor = clicked_number
-            max_color = analysis.colors_calc_max(clicked_number,
-                                                 self.data,
-                                                 self.data_view)
-            self.img.set_clim(vmax=max_color)
-            print 'new max is ', self.data_view.maxcolor
-        else:
-            colorwindow = color.ColorWindow()
-            colorwindow.exec_()
-            
-            if colorwindow.result() and colorwindow.maxcolor.text()!='':
-                self.data_view.maxcolor = float(colorwindow.maxcolor.text())
-                self.img.set_clim(vmax=self.data_view.maxcolor)
-                print 'new max is', self.data_view.maxcolor
-            if colorwindow.result() and colorwindow.mincolor.text()!='':
-                self.data_view.mincolor = float(colorwindow.mincolor.text())
-                self.img.set_clim(vmin=self.data_view.mincolor)
-                print 'new min is', self.data_view.mincolor
-            if colorwindow.resetvalue:
-                self.reset_colors()
+        color.on_pick_color_cube(event, self.img, self.data, self.data_view)
         self.canvas.draw()      
         
     def on_press_image(self, event):
@@ -309,25 +310,19 @@ class Tab(QtGui.QWidget):
         The .5 addition in the floor function is there to make xdata print 
         correct coordinates.        
         """
-        
         if event.inaxes != self.img.axes: return    
         contains, attrd = self.img.contains(event)
-        
+    
         if not contains: return
-
-        print 'xcoordinate=%d, ycoordinate=%d'%(event.xdata + .5,
-                                                event.ydata + .5)
-        self.data_view.xcoordinate = np.floor(event.xdata + .5)
-        self.data_view.ycoordinate = np.floor(event.ydata + .5)
-        self.marker.set_xdata(self.data_view.xcoordinate)
-        self.marker.set_ydata(self.data_view.ycoordinate)
-        self.press = True 
+            
+        navigation_tools.change_coordinates(event, self.data_view)
+        self.bool_press = True
         self.update_graph()
 
 
     def on_release(self, event):
         'on release we reset the press data'
-        self.press = False
+        self.bool_press = False
     
     def open_visualization(self):
 
@@ -355,12 +350,7 @@ class Tab(QtGui.QWidget):
         self.wraith_window.show()                                                  
        
     def reset_colors(self):
-        maxval = analysis.maxval_calc(self.data, self.data_view)
-        self.img.set_clim(0, maxval)
-        self.data_view.maxcolor = self.maxval
-        print 'new max is', self.data_view.maxcolor
-        self.data_view.currentminvalcolor = 0
-        print 'new min is', self.data_view.mincolor               
+        color.reset_colors_cube(self.img, self.data, self.data_view)           
                 
     def set_color_bar_settings(self):
         self.data_view.maxcolor = self.maxval
@@ -389,12 +379,13 @@ class Tab(QtGui.QWidget):
                               self.data_view)
 
     def update_graph(self):
+        self.marker.set_xdata(self.data_view.xcoordinate)
+        self.marker.set_ydata(self.data_view.ycoordinate)        
         plot_tools.plot_graph(self.img2,
                               self.graph_axes, 
                               self.data,
                               self.data_view)
-        self.marker.set_xdata(self.data_view.xcoordinate)
-        self.marker.set_ydata(self.data_view.ycoordinate)
+
         
     def update_image_from_slider(self, sliderval):
         

@@ -28,6 +28,8 @@ class FitDataView():
     def __init__(self):
         self.current_peak = 'Peak0'
         self.current_variable = 'A'
+        self.xcoordinate = 0
+        self.ycoordinate = 0
         self.maxcolor = 100
         self.mincolor = 0
         self.min_filter = -1

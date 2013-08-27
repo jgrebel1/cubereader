@@ -16,11 +16,16 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as Naviga
 import h5py
 
 #project specific items
+import analysis
 import fit_analysis
 import fit_plot_tools
+import plot_tools
 import data_holder
 import data_view
 import color
+import navigation_tools
+from wraith import spectra_fitting
+from wraith import fitting_machinery
 
 plt.ioff()
 
@@ -29,22 +34,37 @@ class CubeFit(QtGui.QWidget):
     def __init__(self,filename, parent=None):
         super(CubeFit, self).__init__(parent) 
         self.filename = filename
-        self.data = data_holder.FitData(self.filename)
-        self.peak_list = self.get_peak_list(self.data)
-        self.data_view = data_view.FitDataView()
-        self.variable_list = self.get_variable_list(self.data, self.data_view)
+        self.fit_data = data_holder.FitData(self.filename)
+        self.peak_list = self.get_peak_list(self.fit_data)
+        self.cube_filename = fit_analysis.get_cube_filename(self.filename)
+        self.cube_data = data_holder.Data(self.cube_filename)
+        self.cube_maxval = analysis.find_maxval(self.cube_data.ycube[...])
+        self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.cube_data.ycube) 
+        self.cube_data_view = data_view.DataView(self.cube_maxval, self.number_of_slices)                
+        self.fit_data_view = data_view.FitDataView()
+        self.variable_list = self.get_variable_list(self.fit_data, self.fit_data_view)
+        self.load_spectrum()
+        self.load_peaks()
+        self.bool_press = False
         self.make_frame()
         
     def make_frame(self):
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)            
-        self.img_axes = self.fig.add_subplot(111)
+        self.img_axes = self.fig.add_subplot(121)
         self.img = fit_plot_tools.initialize_image(self.img_axes,
-                                                   self.data,
-                                                   self.data_view)
+                                                   self.fit_data,
+                                                   self.fit_data_view)
+        self.marker, = self.img_axes.plot(0,0,'wo')
         self.cbar = plt.colorbar(self.img)
         self.cbar.ax.set_picker(5) 
+        self.graph_axes = self.fig.add_subplot(122) 
+        self.img2 = plot_tools.initialize_graph(self.graph_axes,
+                                                self.cube_data,
+                                                self.cube_data_view)
+        self.plot_peaks()
+        
         self.mpl_toolbar = NavigationToolbar(self.canvas, self)
         
         self.dropdown_peaks = QtGui.QComboBox()
@@ -73,6 +93,9 @@ class CubeFit(QtGui.QWidget):
         self.button_filter_from_residuals = QtGui.QPushButton('Filter From Residuals')
         self.button_filter_from_residuals.clicked.connect(self.filter_from_residuals)
         
+        #self.button_test = QtGui.QPushButton('test')
+        #self.button_test.clicked.connect(self.test)
+        
         
                      
         grid = QtGui.QGridLayout()
@@ -98,6 +121,7 @@ class CubeFit(QtGui.QWidget):
         vbox2.addLayout(filter_hbox1)
         vbox2.addLayout(filter_hbox2)
         vbox2.addWidget(self.button_filter_from_residuals)
+        #vbox2.addWidget(self.button_test)
         
 
         
@@ -106,15 +130,44 @@ class CubeFit(QtGui.QWidget):
         
         
         self.setLayout(grid)
+        self.connect_events()
+        self.connect_shortcuts()
+                                               
+    def connect_events(self):
+        """connect to all the events we need"""
+        self.cidpress = self.img.figure.canvas.mpl_connect(
+            'button_press_event', self.on_press_image)
+        self.cidpress2 = self.img.figure.canvas.mpl_connect(
+            'motion_notify_event', self.on_motion)
+        self.cidpress3 = self.img.figure.canvas.mpl_connect(
+            'button_release_event', self.on_release)
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
                                                
+    def connect_shortcuts(self):
+        self.shortcut_up = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Up")),
+                                           self)
+        self.shortcut_up.activated.connect(self.move_up)
+        
+        self.shortcut_down = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Down")),
+                                           self)
+        self.shortcut_down.activated.connect(self.move_down)
+        
+        self.shortcut_left = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Left")),
+                                           self)
+        self.shortcut_left.activated.connect(self.move_left)
+        
+        self.shortcut_right = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Right")),
+                                           self)
+        self.shortcut_right.activated.connect(self.move_right)
+                                               
     def display_attributes(self):
-        function = self.data.peaks[self.data_view.current_peak].attrs['function']
-        name = self.data.peaks[self.data_view.current_peak].attrs['name']
-        penalty_function = self.data.peaks[self.data_view.current_peak].attrs['penalty_function']
-        ranges = self.data.peaks[self.data_view.current_peak].attrs['ranges']
-        variables = self.data.peaks[self.data_view.current_peak].attrs['variables']
+        peak = self.fit_data_view.current_peak
+        function = self.fit_data.peaks[peak].attrs['function']
+        name = self.fit_data.peaks[peak].attrs['name']
+        penalty_function = self.fit_data.peaks[peak].attrs['penalty_function']
+        ranges = self.fit_data.peaks[peak].attrs['ranges']
+        variables = self.fit_data.peaks[peak].attrs['variables']
         function_msg = "Function is " + str(function)
         name_msg = "Name is " + str(name)
         penalty_function_msg = "Penalty Function is " + str(penalty_function)
@@ -123,44 +176,86 @@ class CubeFit(QtGui.QWidget):
         full_msg = function_msg + '\n' + name_msg + '\n' \
                     +penalty_function_msg + '\n' + ranges_msg \
                     + '\n' + variables_msg
-        QtGui.QMessageBox.about(self,"Attributes for %s"%self.data_view.current_peak,
+        QtGui.QMessageBox.about(self,"Attributes for %s"%peak,
                                 full_msg.strip()) 
                                 
     def display_residuals(self):
         fit_plot_tools.set_image_from_residuals(self.img, self.img_axes,
-                                                self.data, self.data_view)
+                                                self.fit_data, self.fit_data_view)
                                       
     def filter_from_residuals(self):
-        filtered_current_image = fit_analysis.filter_current_image_from_residuals(self.data_view.min_filter,
-                                                                                  self.data_view.max_filter,
-                                                                                  self.data,
-                                                                                  self.data_view)
+        filtered_current_image = fit_analysis.filter_current_image_from_residuals(self.fit_data_view.min_filter,
+                                                                                  self.fit_data_view.max_filter,
+                                                                                  self.fit_data,
+                                                                                  self.fit_data_view)
         fit_plot_tools.set_image_from_input(self.img, self.img_axes,
                                             filtered_current_image,
-                                            self.data_view)
-    
-    def peak_changed(self, index):
-        self.data_view.current_peak = self.peak_list[index]
-        fit_plot_tools.set_image_from_data(self.img, self.img_axes,
-                                  self.data, self.data_view)
-        self.variable_list = self.get_variable_list(self.data, self.data_view)
-        self.dropdown_variables.clear()
-        self.dropdown_variables.addItems(self.variable_list)
+                                            self.fit_data_view)
+        self.reset_colors()
+        self.canvas.draw()        
         
-        
-    def get_peak_list(self, data):
+    def get_peak_list(self, fit_data):
         peak_list = []
-        for peak in data.peaks.keys():
+        for peak in fit_data.peaks.keys():
             peak_list.append(peak)
         
         return peak_list
         
-    def get_variable_list(self, data, data_view):
+    def get_variable_list(self, fit_data, fit_data_view):
         variable_list = []
-        peak = data.peaks[data_view.current_peak]
+        peak = fit_data.peaks[fit_data_view.current_peak]
         for variable in peak.keys():
             variable_list.append(variable)
         return variable_list
+        
+    def load_peaks(self):
+        peak_list = fit_analysis.spectrum_from_data(self.peak_list,
+                                                   self.fit_data, 
+                                                   self.cube_data_view)         
+        for peak in peak_list:
+              self.spectrum.peaks.peak_list.append(fitting_machinery.Peak(self.spectrum))
+              self.spectrum.peaks.peak_list[-1].set_spec(peak)
+        #spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
+        
+    def load_spectrum(self):
+        
+        self.spectrum = spectra_fitting.Spectrum()
+        xdata = analysis.xdata_calc(self.cube_data, self.cube_data_view)
+        ydata = analysis.ydata_calc(self.cube_data, self.cube_data_view) 
+        self.spectrum.EE = xdata
+        self.spectrum.data = ydata   
+        
+    def move_down(self):
+        navigation_tools.move_down(self.cube_data_view, self.dimension1)
+        self.update_graph()
+        self.canvas.draw()        
+    
+    def move_left(self):
+        navigation_tools.move_left(self.cube_data_view)
+        self.update_graph()
+        self.canvas.draw()
+    
+    def move_right(self):
+        navigation_tools.move_right(self.cube_data_view, self.dimension2)
+        self.update_graph()
+        self.canvas.draw()
+      
+    def move_up(self):
+        navigation_tools.move_up(self.cube_data_view)
+        self.update_graph()
+        self.canvas.draw()
+      
+    def on_motion(self, event):        
+        """
+        dragging the marker will change the graph.
+        """
+        if self.bool_press is False: return
+        if event.inaxes != self.img.axes: return
+    
+        navigation_tools.change_coordinates(event, self.fit_data_view)
+        self.update_graph()
+        self.canvas.draw()
+
         
     def on_pick_color(self, event):
         """
@@ -169,41 +264,48 @@ class CubeFit(QtGui.QWidget):
         the lower third sets min color value, and the middle pops up a
         window asking for custom values.
         """
-        val = event.mouseevent.ydata
-        clicked_number = (val*(self.data_view.maxcolor
-                                         -self.data_view.mincolor)
-                               +self.data_view.mincolor)
+        color.on_pick_color_fit(event, self.img,
+                            self.fit_data,self.fit_data_view)     
+        self.canvas.draw()      
         
-        if val < .33:
-            self.data_view.mincolor = clicked_number
-            self.img.set_clim(vmin=self.data_view.mincolor)
-            print 'new min is ', self.data_view.mincolor
+    def on_press_image(self, event):
+        """
+        This changes the spec graph to theclicked xy coordinate and moves
+        the marker on the image.
+        
+        The .5 addition in the floor function is there to make xdata print 
+        correct coordinates.        
+        """
+        if event.inaxes != self.img.axes: return    
+        contains, attrd = self.img.contains(event)
     
-        elif val > .66:
-            self.data_view.maxcolor = clicked_number
-            self.img.set_clim(vmax=self.data_view.maxcolor)
-            print 'new max is ', self.data_view.maxcolor
-        else:
-            colorwindow = color.ColorWindow()
-            colorwindow.exec_()
+        if not contains: return
             
-            if colorwindow.result() and colorwindow.maxcolor.text()!='':
-                self.data_view.maxcolor = float(colorwindow.maxcolor.text())
-                self.img.set_clim(vmax=self.data_view.maxcolor)
-                print 'new max is', self.data_view.maxcolor
-            if colorwindow.result() and colorwindow.mincolor.text()!='':
-                self.data_view.mincolor = float(colorwindow.mincolor.text())
-                self.img.set_clim(vmin=self.data_view.mincolor)
-                print 'new min is', self.data_view.mincolor
-            if colorwindow.resetvalue:
-                self.reset_colors(self.img, self.data, self.data_view)
-        self.canvas.draw()   
+        navigation_tools.change_coordinates(event, self.cube_data_view)
+        self.bool_press = True
+        self.update_graph()
+        self.canvas.draw()
+
+
+    def on_release(self, event):
+        'on release we reset the press data'
+        self.bool_press = False
+ 
+    def peak_changed(self, index):
+        self.fit_data_view.current_peak = self.peak_list[index]
+        fit_plot_tools.set_image_from_data(self.img, self.img_axes,
+                                  self.fit_data, self.fit_data_view)
+        self.variable_list = self.get_variable_list(self.fit_data,
+                                                    self.fit_data_view)
+        self.dropdown_variables.clear()
+        self.dropdown_variables.addItems(self.variable_list)
         
-    def reset_colors(self, img, data, data_view):
-        image = fit_analysis.get_image_from_data(data, data_view)
-        data_view.mincolor = np.amin(image)
-        data_view.maxcolor = np.amax(image)
-        img.set_clim(data_view.mincolor, data_view.maxcolor)
+    def plot_peaks(self):
+        self.spectrum.plot_individual_peaks(scale=1.0,
+                                            axes=self.graph_axes, offset=0.0)
+   
+    def reset_colors(self):
+        color.reset_colors_fit(self.img, self.fit_data, self.fit_data_view)
         
     def update_filter_settings(self):
         """
@@ -212,12 +314,23 @@ class CubeFit(QtGui.QWidget):
         """
         min_filter = float(self.textbox_min_filter.text())
         max_filter = float(self.textbox_max_filter.text())
-        self.data_view.min_filter = min_filter
-        self.data_view.max_filter = max_filter
+        self.fit_data_view.min_filter = min_filter
+        self.fit_data_view.max_filter = max_filter
+
+    def update_graph(self):
+        self.marker.set_xdata(self.cube_data_view.xcoordinate)
+        self.marker.set_ydata(self.cube_data_view.ycoordinate)
+
+        plot_tools.initialize_graph(self.graph_axes,
+                                    self.cube_data,
+                                    self.cube_data_view)
+        self.spectrum.clear_peaks()
+        self.load_peaks()        
+        self.plot_peaks()                            
 
         
     def variable_changed(self, index):
-        self.data_view.current_variable = self.variable_list[index]
+        self.fit_data_view.current_variable = self.variable_list[index]
         fit_plot_tools.set_image_from_data(self.img, self.img_axes,
-                                  self.data, self.data_view)
+                                  self.fit_data, self.fit_data_view)
         

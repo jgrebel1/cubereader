@@ -396,7 +396,6 @@ class Form(QMainWindow):
         for peak in peak_list:
               spectrum.peaks.peak_list.append(Peak(spectrum))
               spectrum.peaks.peak_list[-1].set_spec(peak)
-        #spectrum.set_spec(specifications)
         spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
         
     def fit_window_from_spectrum_holder(self):

@@ -25,7 +25,7 @@ class InitialSettingsWindow(QtGui.QDialog):
         self.inputs()
         
     def inputs(self):
-        
+        """populate screen"""
         dimension1label = QtGui.QLabel('Enter Dimension 1:')
         dimension2label = QtGui.QLabel('Enter Dimension 2:')
         

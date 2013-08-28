@@ -35,8 +35,22 @@ class AppForm(QtGui.QMainWindow):
         self.create_menu()
         self.create_main_window()
         #self.create_status_bar()
-         
+        
+    def create_main_window(self):
+        """populate screen"""
+        self.main_window = QtGui.QWidget()
+        self.tab = QtGui.QTabWidget()
+        self.tab.setTabsClosable(True)
+        self.tab.tabCloseRequested.connect(self.close_tab)
+        layout = QtGui.QHBoxLayout()
+        layout.addWidget(self.tab)
+
+        self.main_window.setLayout(layout)
+        self.setCentralWidget(self.main_window)
+        self.resize(971,600)  
+        
     def close_tab(self):
+        """closes hdf5 files before closing tab"""
         try:
             if self.tab.currentWidget().data.hdf5:
                 self.tab.currentWidget().data.hdf5.close()
@@ -54,17 +68,7 @@ class AppForm(QtGui.QMainWindow):
     def control_panel_update(self):
         self.control.update_current()
     
-    def create_main_window(self):
-        self.main_window = QtGui.QWidget()
-        self.tab = QtGui.QTabWidget()
-        self.tab.setTabsClosable(True)
-        self.tab.tabCloseRequested.connect(self.close_tab)
-        layout = QtGui.QHBoxLayout()
-        layout.addWidget(self.tab)
 
-        self.main_window.setLayout(layout)
-        self.setCentralWidget(self.main_window)
-        self.resize(971,600) 
 
     def create_menu(self):
         """makes the menu toolbar on the top of the main window"""

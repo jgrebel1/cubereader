@@ -14,6 +14,7 @@ import h5py
 #project specific items
 
 import analysis
+import generic_thread
 
 
 class RebinHDF5(QtGui.QMainWindow):
@@ -100,7 +101,7 @@ class RebinHDF5(QtGui.QMainWindow):
         output_filename = self.get_output_filename(input_file)
         self.progress_bar = self.rebin_progress_bar(slices)
         print 'Saving file %s'%output_filename
-        self.threadPool.append(GenericThread(self.rebin_hdf5,input_file, 
+        self.threadPool.append(generic_thread.GenericThread(self.rebin_hdf5,input_file, 
                                              output_filename, new_rows,
                                              new_columns))
         self.threadPool[len(self.threadPool)-1].start()           
@@ -190,6 +191,7 @@ class RebinWindow(QtGui.QDialog):
         self.inputs()
         
     def inputs(self):
+        """populate screen"""
         label_current_dimensions = QtGui.QLabel("Current Dimensions are rows:%s, columns:%s, %s,"%(str(self.input_rows),
                                                                                                    str(self.input_columns),
                                                                                                    str(self.input_slices)))
@@ -222,21 +224,5 @@ class RebinWindow(QtGui.QDialog):
         
     def connect_events(self):
           self.connect(self.okButton, QtCore.SIGNAL('clicked()'),self.accept)
-          self.connect(self.cancelButton, QtCore.SIGNAL('clicked()'), self.reject)
-          
-
-class GenericThread(QtCore.QThread):
-    def __init__(self, function, *args, **kwargs):
-        QtCore.QThread.__init__(self)
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-
-    def __del__(self):
-        self.wait()
-
-    def run(self):
-        self.function(*self.args,**self.kwargs)
-        return        
+          self.connect(self.cancelButton, QtCore.SIGNAL('clicked()'), self.reject) 
             
-        

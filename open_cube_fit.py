@@ -49,6 +49,7 @@ class CubeFit(QtGui.QWidget):
         self.make_frame()
         
     def make_frame(self):
+        """populate screen"""
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)            
@@ -162,6 +163,7 @@ class CubeFit(QtGui.QWidget):
         self.shortcut_right.activated.connect(self.move_right)
                                                
     def display_attributes(self):
+        """popup peak attributes"""
         peak = self.fit_data_view.current_peak
         function = self.fit_data.peaks[peak].attrs['function']
         name = self.fit_data.peaks[peak].attrs['name']
@@ -184,6 +186,10 @@ class CubeFit(QtGui.QWidget):
                                                 self.fit_data, self.fit_data_view)
                                       
     def filter_from_residuals(self):
+        """
+        display filtered image. Filter is from residual bounds input
+        by user
+        """
         filtered_current_image = fit_analysis.filter_current_image_from_residuals(self.fit_data_view.min_filter,
                                                                                   self.fit_data_view.max_filter,
                                                                                   self.fit_data,
@@ -195,6 +201,7 @@ class CubeFit(QtGui.QWidget):
         self.canvas.draw()        
         
     def get_peak_list(self, fit_data):
+        """generates list of peak names in hdf5 file"""
         peak_list = []
         for peak in fit_data.peaks.keys():
             peak_list.append(peak)
@@ -202,6 +209,7 @@ class CubeFit(QtGui.QWidget):
         return peak_list
         
     def get_variable_list(self, fit_data, fit_data_view):
+        """generates list of variable names for a given peak"""
         variable_list = []
         peak = fit_data.peaks[fit_data_view.current_peak]
         for variable in peak.keys():
@@ -209,6 +217,10 @@ class CubeFit(QtGui.QWidget):
         return variable_list
         
     def load_peaks(self):
+        """
+        populates wraith spectrum with peaks from current x and y
+        coordinates
+        """
         peak_list = fit_analysis.spectrum_from_data(self.peak_list,
                                                    self.fit_data, 
                                                    self.cube_data_view)         
@@ -218,7 +230,7 @@ class CubeFit(QtGui.QWidget):
         #spectrum.peaks.optimize_fit(spectrum.E(),spectrum.nobg())
         
     def load_spectrum(self):
-        
+        """initializes a wraith spectrum"""
         self.spectrum = spectra_fitting.Spectrum()
         xdata = analysis.xdata_calc(self.cube_data, self.cube_data_view)
         ydata = analysis.ydata_calc(self.cube_data, self.cube_data_view) 
@@ -226,21 +238,25 @@ class CubeFit(QtGui.QWidget):
         self.spectrum.data = ydata   
         
     def move_down(self):
+        """move marker down and update graph"""
         navigation_tools.move_down(self.cube_data_view, self.dimension1)
         self.update_graph()
         self.canvas.draw()        
     
     def move_left(self):
+        """move marker left and update graph"""
         navigation_tools.move_left(self.cube_data_view)
         self.update_graph()
         self.canvas.draw()
     
     def move_right(self):
+        """move marker right and update graph"""
         navigation_tools.move_right(self.cube_data_view, self.dimension2)
         self.update_graph()
         self.canvas.draw()
       
     def move_up(self):
+        """move marker up and update graph"""
         navigation_tools.move_up(self.cube_data_view)
         self.update_graph()
         self.canvas.draw()
@@ -292,6 +308,10 @@ class CubeFit(QtGui.QWidget):
         self.bool_press = False
  
     def peak_changed(self, index):
+        """
+        changing dropdown peak generates new variable list
+        
+        """
         self.fit_data_view.current_peak = self.peak_list[index]
         fit_plot_tools.set_image_from_data(self.img, self.img_axes,
                                   self.fit_data, self.fit_data_view)
@@ -301,6 +321,7 @@ class CubeFit(QtGui.QWidget):
         self.dropdown_variables.addItems(self.variable_list)
         
     def plot_peaks(self):
+        """plot all peaks in spectrum to graph"""
         self.spectrum.plot_individual_peaks(scale=1.0,
                                             axes=self.graph_axes, offset=0.0)
    
@@ -330,6 +351,7 @@ class CubeFit(QtGui.QWidget):
 
         
     def variable_changed(self, index):
+        """changing variable updates image"""
         self.fit_data_view.current_variable = self.variable_list[index]
         fit_plot_tools.set_image_from_data(self.img, self.img_axes,
                                   self.fit_data, self.fit_data_view)

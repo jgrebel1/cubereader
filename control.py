@@ -24,7 +24,7 @@ class ControlWindow(QtGui.QDialog):
         self.inputs()
         
     def inputs(self):
-
+        """populate screen"""
         self.imageslicelabel= QtGui.QLabel('Image Slice ev:')
         maxcolorlabel = QtGui.QLabel('Max Color Value:')
         mincolorlabel = QtGui.QLabel('Min Color Value:')        

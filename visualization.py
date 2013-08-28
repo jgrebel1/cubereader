@@ -12,6 +12,7 @@ from tvtk.api import tvtk
 import numpy as np
 
 class Visualization(HasTraits):
+    """mayavi application"""
     scene = Instance(MlabSceneModel, ())
     try:
         engine = mayavi.engine
@@ -62,6 +63,7 @@ class Visualization(HasTraits):
 
 
 class MayaviQWidget(QtGui.QWidget):
+    """Window to hold mayavi application"""
     def __init__(self,ycube,parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.setWindowTitle('3D Data Visualization')

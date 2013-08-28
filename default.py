@@ -7,7 +7,10 @@ Created on Fri Jun 28 16:52:51 2013
 import re
 
 class DefaultValues():
-    
+    """
+    takes file input and returns information found
+    in header
+    """
     def __init__(self, filename):
         self.filename = filename
         with open(filename,'rb') as fid:

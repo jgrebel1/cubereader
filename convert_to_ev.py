@@ -15,6 +15,10 @@ import analysis
 import generic_thread
 
 class ConvertEvCube():
+    """
+    Makes an equally spaced ev cube from an equally 
+    spaced wavelength cube
+    """
     def __init__(self, hdf5_file, wavelength_xdata, dimension1, dimension2,
                  convert_mutex):
         self.convert_mutex = convert_mutex
@@ -83,11 +87,12 @@ class ConvertEvCube():
         self.progress_window.show()
         return progress_bar
         
-    def ev_list_size_calc(self, ev_xdata):
-        ev_list_size = (ev_xdata[-1]-ev_xdata[0])/(ev_xdata[1]-ev_xdata[0])
-        return ev_list_size
-        
     def rebin_ev_ydata(self, ev_ydata, ev_xdata, rebinned_ev_xdata):
+        """
+        Takes unequally spaced ev data and rebins it to make
+        equally spaced ev data
+        """
+        
         f = interpolate.interp1d(ev_xdata, ev_ydata)
         rebinned_ev_ydata = []
         count = 0

@@ -8,6 +8,7 @@ from PySide import QtCore
 from PySide import QtGui
 
 class GenericThread(QtCore.QThread):
+    """generic thread for multi-threading processes"""
     def __init__(self, function, *args, **kwargs):
         QtCore.QThread.__init__(self)
         self.function = function

@@ -26,7 +26,7 @@ import fit_analysis
 
 class SpectrumHolder(QtGui.QDialog):
     """
-    Holds peaks 
+    Holds peaks, peak_fit, and generates peak_fit images
     """
     def __init__(self, filename, dimension1, dimension2):
         super(SpectrumHolder, self).__init__()
@@ -50,7 +50,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.inputs()
 
     def inputs(self):
-        
+        """populate screen"""
         self.table = QtGui.QTableWidget()  
         self.table.setColumnCount(1)
         
@@ -101,6 +101,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.setLayout(grid)
         
     def count_peaks(self, cube_peaks):
+        """count peaks in cube_peaks"""
         spectrum = cube_peaks[0]
         peak_count = 0            
         for peak in spectrum:
@@ -108,6 +109,7 @@ class SpectrumHolder(QtGui.QDialog):
         return peak_count
         
     def cube_warning(self):
+        """popup warning when cube is not fitted yet"""
         msg = """
         Cube not fitted yet. Fit a cube to display.
         """
@@ -117,6 +119,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.show()
     
     def display_peak_amplitudes(self):
+        """popup window with all peak amplitudes"""
         if not self.cube_fitted:
             self.cube_warning()
             return    
@@ -136,6 +139,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_amplitude.show()
         
     def display_peak_m(self):
+        """popup window with all peak m's"""
         if not self.cube_fitted:
             self.cube_warning()
             return 
@@ -155,6 +159,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_m.show()
         
     def display_peak_mu(self):
+        """popup window with all peak mu's"""
         if not self.cube_fitted:
             self.cube_warning()
             return     
@@ -174,6 +179,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_mu.show()
     
     def display_peak_sigma(self):
+        """popup window with all peak sigmas"""
         if not self.cube_fitted:
             self.cube_warning()
             return        
@@ -193,6 +199,7 @@ class SpectrumHolder(QtGui.QDialog):
         self.window_sigma.show()
     
     def display_cube_residuals(self):
+        """popup window with integrated residuals"""
         if not self.cube_fitted:
             self.cube_warning()
             return                                     
@@ -225,8 +232,8 @@ class SpectrumHolder(QtGui.QDialog):
         if not self.textbox_spectrum_box.isReadOnly():
             self.textbox_spectrum_box.clear()
 
-    def generate_amplitudes_picture(self):  
-        for spectrum in self.cube_peaks:
+    def generate_amplitudes_picture(self, cube_peaks):  
+        for spectrum in cube_peaks:
             for peak in spectrum:
                 self.amplitudes.append(peak['values'][0])
         self.amplitudes = np.reshape(self.amplitudes,
@@ -234,8 +241,8 @@ class SpectrumHolder(QtGui.QDialog):
                                       self.dimension2,
                                       self.peak_count))
                                       
-    def generate_m_picture(self):
-        for spectrum in self.cube_peaks:
+    def generate_m_picture(self, cube_peaks):
+        for spectrum in cube_peaks:
             for peak in spectrum:
                 self.m.append(peak['values'][3])
             
@@ -244,8 +251,8 @@ class SpectrumHolder(QtGui.QDialog):
                              self.dimension2,
                              self.peak_count))
                                       
-    def generate_mu_picture(self):
-        for spectrum in self.cube_peaks:
+    def generate_mu_picture(self, cube_peaks):
+        for spectrum in cube_peaks:
             for peak in spectrum:
                 self.mu.append(peak['values'][1])
             
@@ -259,8 +266,8 @@ class SpectrumHolder(QtGui.QDialog):
                                          (self.dimension1,
                                           self.dimension2))
     
-    def generate_sigma_picture(self):
-        for spectrum in self.cube_peaks:
+    def generate_sigma_picture(self, cube_peaks):
+        for spectrum in cube_peaks:
             for peak in spectrum:
                 self.sigma.append(peak['values'][2])
             
@@ -270,6 +277,7 @@ class SpectrumHolder(QtGui.QDialog):
                                  self.peak_count))
     
     def get_image_cube(self, variable):
+        """choose image cube based on variable"""
         if variable == 'A':
             image_cube = self.amplitudes
         elif variable == '\\mu':
@@ -287,10 +295,10 @@ class SpectrumHolder(QtGui.QDialog):
         self.label_cube_fitted.setText("Cube Box Loaded")
         self.sort_peaks(self.cube_peaks)
         self.peak_count = self.count_peaks(self.cube_peaks)
-        self.generate_amplitudes_picture()
-        self.generate_mu_picture()
-        self.generate_sigma_picture() 
-        self.generate_m_picture()
+        self.generate_amplitudes_picture(self.cube_peaks)
+        self.generate_mu_picture(self.cube_peaks)
+        self.generate_sigma_picture(self.cube_peaks) 
+        self.generate_m_picture(self.cube_peaks)
         self.generate_residuals_picture()
         self.cube_fitted = True
         self.cube_fitting = False

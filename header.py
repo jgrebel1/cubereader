@@ -3,7 +3,21 @@
 Created on Tue Jul 16 14:58:18 2013
 
 @author: JG
+
+
+
+
+
+
+Cubereader not using this module anymore
+
+
+
+
+
+
 """
+
 
 from PySide import QtGui
 

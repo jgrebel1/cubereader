@@ -13,8 +13,13 @@ import numpy as np
 
 import analysis
 
+#this module contains functions used both by the peak_fit reader and spectrum
+#holder box. I need to separate these functions into two separate modules
+
+
 def filter_current_image_from_residuals(min_filter, max_filter,
                                         data, data_view):
+    """returns image with 0's in places failing residual calculation"""
     image = get_image_from_data(data, data_view)
     integrated_residuals = data.integrated_residuals
     filtered_image = filter_from_residuals(min_filter, max_filter,
@@ -22,6 +27,7 @@ def filter_current_image_from_residuals(min_filter, max_filter,
     return filtered_image
 
 def filter_from_residuals(min_filter, max_filter, image, image_residuals):
+    """returns image with 0's in places failing residual calculation"""
     image_current = np.copy(image)
     (rows, columns) = np.shape(image)
     for row in np.arange(rows):
@@ -33,6 +39,7 @@ def filter_from_residuals(min_filter, max_filter, image, image_residuals):
     return image_current
             
 def get_cube_filename(fit_filename):
+    """input peak_fit filename, return original data filename"""
     dirname = os.path.dirname(fit_filename)
     basename = os.path.basename(fit_filename)
     cube_basename = basename[11:]
@@ -49,6 +56,10 @@ def get_image_from_data(data, data_view):
     return image
     
 def get_output_filename(input_filename):
+    """
+    generate filenames for peak_fit. if filename exists in directory
+    increment name
+    """
     hdf5_directory = QtGui.QFileDialog.getExistingDirectory()
     basename = analysis.get_file_basename(input_filename)
     file_exists = True
@@ -65,6 +76,7 @@ def get_output_filename(input_filename):
     return output_filename
 
 def get_peak_function(cube_peaks, peak_number):
+    """peak function from cube_peaks holder"""
     spectrum = cube_peaks[0]
     peak = spectrum[peak_number]
     peak_function = peak['function']
@@ -72,30 +84,37 @@ def get_peak_function(cube_peaks, peak_number):
     
 
 def get_peak_name(cube_peaks, peak_number):
+    """peak name from cube_peaks holder"""
     spectrum = cube_peaks[0]
     peak = spectrum[peak_number]
     peak_name = peak['name']
     return peak_name
 
 def get_peak_penalty_function(cube_peaks, peak_number):
+    """peak penalty function from cube_peaks holder"""
     spectrum = cube_peaks[0]
     peak = spectrum[peak_number]
     peak_penalty_function = peak['penalty_function']
     return peak_penalty_function  
     
 def get_peak_ranges(cube_peaks, peak_number):
+    """peak ranges from cube_peaks holder"""
     spectrum = cube_peaks[0]
     peak = spectrum[peak_number]
     peak_ranges = peak['ranges']
     return peak_ranges
                              
 def get_peak_variables(cube_peaks, peak_number):
+    """peak variables from cube_peaks holder"""
     spectrum = cube_peaks[0]
     peak = spectrum[peak_number]
     peak_variables = peak['variables']
     return peak_variables
     
 def spectrum_from_data(peak_list, fit_data, cube_data_view):
+    """
+    generate list of peaks from fit data.
+    """
     x = cube_data_view.xcoordinate
     y = cube_data_view.ycoordinate
     spectrum = []

@@ -4,8 +4,38 @@ Created on Fri Jun 21 13:23:38 2013
 
 @author: JG
 
+
+
+
+
+
+
+
+
+
+
 This file is not in use anymore by CubeReader. I integrated its contents
 with convert_file so that the progress bar works.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """
 import os
 import numpy as np

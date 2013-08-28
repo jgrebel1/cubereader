@@ -113,6 +113,7 @@ class ColorWindow(QtGui.QDialog):
         self.inputs()
 
     def inputs(self):
+        """populate screen"""
         maxcolorlabel = QtGui.QLabel('Enter Max Color Value:')
         mincolorlabel = QtGui.QLabel('Enter Min Color Value:')
         

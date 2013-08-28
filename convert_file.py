@@ -211,6 +211,7 @@ class ConvertToCubeReader():
               
     def read_into_cube(self, fid, temp_hdf5, global_bool,
                        dimension1, dimension2):
+        """read from mf1 file into temporary hdf5 file"""
         locker = QtCore.QMutexLocker(self.convert_mutex)
         if global_bool:
             cube = temp_hdf5.create_dataset('cube',

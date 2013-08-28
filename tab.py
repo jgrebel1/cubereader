@@ -60,7 +60,7 @@ class Tab(QtGui.QWidget):
  
     
     def make_frame(self):
-        
+        """populate screen"""
 
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
@@ -179,6 +179,7 @@ class Tab(QtGui.QWidget):
         self.textbox_vmax_slice.setText(max_text)     
         
     def close_tab(self):
+        """closes hdf5 file before closing tab"""
         if self.tab.currentWidget().hdf5:
             self.tab.currentWidget().hdf5.close()
         self.tab.removeTab(self.tab.currentIndex())  
@@ -214,6 +215,7 @@ class Tab(QtGui.QWidget):
         self.shortcut_right.activated.connect(self.move_right)
                                                
     def display_header(self):
+        """popup header"""
         try:
             msg = self.data.header
             QtGui.QMessageBox.about(self, "Header for %s"%self.basename, msg.strip()) 
@@ -264,19 +266,23 @@ class Tab(QtGui.QWidget):
                                                               self.dimension2)
                                                               
     def move_down(self):
+        """move marker down and update graph"""
         navigation_tools.move_down(self.data_view, self.dimension1)
         self.update_graph()
         
     
     def move_left(self):
+        """move marker left and update graph"""
         navigation_tools.move_left(self.data_view)
         self.update_graph()
     
     def move_right(self):
+        """move marker right and update graph"""
         navigation_tools.move_right(self.data_view, self.dimension2)
         self.update_graph()
       
     def move_up(self):
+        """move marker up and update graph"""
         navigation_tools.move_up(self.data_view)
         self.update_graph()
       
@@ -325,7 +331,7 @@ class Tab(QtGui.QWidget):
         self.bool_press = False
     
     def open_visualization(self):
-
+        """opens mayavi window"""
         self.data.check_for_ev_cube(self.data.hdf5)
         ycube = analysis.mayavi_cube(self.data, self.data_view)
         if ycube == []:
@@ -341,6 +347,7 @@ class Tab(QtGui.QWidget):
         self.visualization_window.show()
         
     def open_wraith(self):
+        """opens wraith window"""
         xdata = analysis.xdata_calc(self.data, self.data_view)
         ydata = analysis.ydata_calc(self.data, self.data_view)
         self.wraith_window = wraith_for_cubereader.Form(self.filename,

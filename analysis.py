@@ -100,6 +100,8 @@ def ev_to_index2(ev, data):
     return index
     
 def find_maxval(dataset):
+    """
+    finds maxval of a dataset too large to directly put into np.amax"""
     maxval = 0
     for i in dataset:
         if np.amax(i) > maxval:
@@ -107,6 +109,7 @@ def find_maxval(dataset):
     return maxval
     
 def get_file_basename(path_name):
+    """gets file basename without extension"""
     filename, extension = os.path.splitext(path_name)
     basename = os.path.basename(filename)
     return basename
@@ -116,6 +119,7 @@ def get_dimensions(ycube):
     return (rows, columns, slices)
     
 def get_xdata(hdf5_axis):
+    """gets xdata from hyperspy hdf5 file"""
     scale = hdf5_axis.attrs['scale']
     offset = hdf5_axis.attrs['offset']
     size = hdf5_axis.attrs['size']
@@ -353,6 +357,9 @@ def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):
     return ydata
 
 def yimage_calc(data, data_view):
+    """
+    returns yimage based on data type and current display mode.
+    """
     slice1 = data_view.slider_val
     
     if data_view.display_ev and data.xdata_info['data_type'] == 'ev':

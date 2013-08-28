@@ -10,7 +10,7 @@ import numpy as np
 import analysis
     
 class Data():
-    
+    """holds cube data"""
     def __init__(self, hdf5_file):
         self.xdata = []
         self.ycube = []
@@ -45,7 +45,7 @@ class Data():
             pass
             
 class FitData():
-    
+    """holds peak_fit data"""
     def __init__(self, hdf5_file):
         self.peaks = []        
         self.load_data(hdf5_file)

@@ -3,6 +3,9 @@
 Created on Wed Jul 10 13:58:24 2013
 
 @author: JG
+
+From Eli Bendersky's (eliben@gmail.com) embeding matplotlib into pyqt 
+Gui Demo.
 """
 import os
 import numpy as np

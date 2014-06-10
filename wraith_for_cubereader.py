@@ -58,6 +58,7 @@ class Form(QMainWindow):
         super(Form, self).__init__(parent)
         self.filename = filename
         self.xdata = module_copy.copy(analysis.xdata_calc(data, data_view))
+        self.xdata = np.float64(self.xdata)
         self.data = data
         self.ydata = module_copy.copy(analysis.ydata_calc(data, data_view))
         self.xcoordinate = module_copy.copy(data_view.xcoordinate)
@@ -557,6 +558,7 @@ class Form(QMainWindow):
                                              input_xdata = self.data.xdata,
                                              dtype=self.data.xdata_info['data_type'],
                                              display_ev = self.display_ev)
+                ydata = np.float64(ydata)
                 peak_holder.load_from_mf1_cube(self.xdata[:],
                                                ydata,
                                                j,

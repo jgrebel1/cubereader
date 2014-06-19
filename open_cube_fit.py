@@ -39,8 +39,8 @@ class CubeFit(QtGui.QWidget):
         self.cube_filename = fit_analysis.get_cube_filename(self.filename)
         self.cube_data = data_holder.Data(self.cube_filename)
         self.cube_maxval = analysis.find_maxval(self.cube_data.ycube[...])
-        self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.cube_data.ycube) 
-        self.cube_data_view = data_view.DataView(self.cube_maxval, self.number_of_slices)                
+        self.dimensions = analysis.get_dimensions(self.cube_data.ycube) 
+        self.cube_data_view = data_view.DataView(self.cube_maxval, self.dimensions)                
         self.fit_data_view = data_view.FitDataView()
         self.variable_list = self.get_variable_list(self.fit_data, self.fit_data_view)
         self.load_spectrum()
@@ -239,7 +239,7 @@ class CubeFit(QtGui.QWidget):
         
     def move_down(self):
         """move marker down and update graph"""
-        navigation_tools.move_down(self.cube_data_view, self.dimension1)
+        navigation_tools.move_down(self.cube_data_view, self.cube_data_view.dimension1)
         self.update_graph()
         self.canvas.draw()        
     
@@ -251,7 +251,7 @@ class CubeFit(QtGui.QWidget):
     
     def move_right(self):
         """move marker right and update graph"""
-        navigation_tools.move_right(self.cube_data_view, self.dimension2)
+        navigation_tools.move_right(self.cube_data_view, self.cube_data_view.dimension2)
         self.update_graph()
         self.canvas.draw()
       

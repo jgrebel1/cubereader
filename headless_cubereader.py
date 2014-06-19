@@ -171,6 +171,12 @@ class ViewData(QtGui.QMainWindow):
                      self.update_image_from_slider)
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
+        self.connect(self.imageslice, SIGNAL('editingFinished ()'), 
+                     self.update_dataview)
+        self.connect(self.graphslicex, SIGNAL('editingFinished ()'), 
+                     self.update_dataview)
+        self.connect(self.graphslicey, SIGNAL('editingFinished ()'), 
+                     self.update_dataview)
             
     def connect_shortcuts(self):
         self.shortcut_up = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Up")),
@@ -270,7 +276,12 @@ class ViewData(QtGui.QMainWindow):
         self.slider.setRange(1, self.dataview.number_of_slices)
         self.slider.setValue(1)
         self.slider.setTracking(True)
-        
+    
+    def update_dataview(self):
+        'updates dataview from control'
+        self.dataview.slider_val = 
+        self.dataview.xcoordinate = 
+        self.dataview.ycoordinate = 
         
     def update_graph(self):
         self.marker.set_xdata(self.dataview.xcoordinate)

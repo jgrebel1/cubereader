@@ -8,7 +8,7 @@ import os
 import numpy as np
 from scipy import interpolate
 
-def colors_calc(data, data_view):
+def colors_calc(data, dataview):
     """
     returns min and max colors for display based on data type
     and current display mode.
@@ -17,22 +17,22 @@ def colors_calc(data, data_view):
     600 is arbitrary   
     """
     scale_factor = 600
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
-        max_color = data_view.maxcolor
-        min_color = data_view.mincolor
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        max_color = data_view.maxcolor*scale_factor
-        min_color = data_view.mincolor*scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
-        max_color = data_view.maxcolor/scale_factor
-        min_color = data_view.mincolor/scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        max_color = data_view.maxcolor
-        min_color = data_view.mincolor
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
+        max_color = dataview.maxcolor
+        min_color = dataview.mincolor
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_color = dataview.maxcolor*scale_factor
+        min_color = dataview.mincolor*scale_factor
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
+        max_color = dataview.maxcolor/scale_factor
+        min_color = dataview.mincolor/scale_factor
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_color = dataview.maxcolor
+        min_color = dataview.mincolor
 
     return max_color, min_color
     
-def colors_calc_max(input_max_color, data, data_view):   
+def colors_calc_max(input_max_color, data, dataview):   
     """
     returns max color for display based on data type
     and current display mode from user input values.
@@ -41,18 +41,18 @@ def colors_calc_max(input_max_color, data, data_view):
     600 is arbitrary   
     """
     scale_factor = 600
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         max_color = input_max_color
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         max_color = input_max_color*scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
         max_color = input_max_color/scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         max_color = input_max_color
 
     return max_color
     
-def colors_calc_min(input_min_color,data, data_view):   
+def colors_calc_min(input_min_color,data, dataview):   
     """
     returns min and color for display based on data type
     and current display mode from user input values.
@@ -61,13 +61,13 @@ def colors_calc_min(input_min_color,data, data_view):
     600 is arbitrary   
     """
     scale_factor = 600
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         min_color = input_min_color
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         min_color = input_min_color*scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
         min_color = input_min_color/scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         min_color = input_min_color
 
     return min_color
@@ -151,7 +151,7 @@ def index_from_ordered_list(value, ordered_list):
                 break
     return index
     
-def maxval_calc(data, data_view):
+def maxval_calc(data, dataview):
     """
     returns maxval for display based on data type and current display mode.
     
@@ -161,59 +161,59 @@ def maxval_calc(data, data_view):
 
     scale_factor = 600
     
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
-        maxval = data_view.maxval
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        maxval = data_view.maxval*scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
-        maxval = data_view.maxval/scale_factor
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        maxval = data_view.maxval
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
+        maxval = dataview.maxval
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        maxval = dataview.maxval*scale_factor
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
+        maxval = dataview.maxval/scale_factor
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        maxval = dataview.maxval
         
     return maxval 
 
-def mayavi_cube(data, data_view):
+def mayavi_cube(data, dataview):
     """
-    chooses correct cube to use for mayavi based on data type and data_view.
+    chooses correct cube to use for mayavi based on data type and dataview.
     Choice is between default and ev_cube.
     """
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         ycube = data.ycube
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         ycube = data.ev_ycube
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
         ycube = data.ycube
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         ycube = data.ycube
     return ycube
     
-def mayavi_slices(data, data_view):
+def mayavi_slices(data, dataview):
     """
     returns min and max slices based on data type and data view.
     The only difference occurs for wavelength data and ev display. Then the 
     slices are from the ev_cube.
     """
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
-        min_slice = wavelength_to_index(data_view.vmin_wavelength, data)
-        max_slice = wavelength_to_index(data_view.vmax_wavelength, data)
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        max_slice = wavelength_to_index2(data_view.vmin_wavelength, data)
-        min_slice = wavelength_to_index2(data_view.vmax_wavelength, data)
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
-        min_slice = wavelength_to_index(data_view.vmin_wavelength, data)
-        max_slice = wavelength_to_index(data_view.vmax_wavelength, data)
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        min_slice = wavelength_to_index(data_view.vmin_wavelength, data)
-        max_slice = wavelength_to_index(data_view.vmax_wavelength, data)
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
+        min_slice = wavelength_to_index(dataview.vmin_wavelength, data)
+        max_slice = wavelength_to_index(dataview.vmax_wavelength, data)
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        max_slice = wavelength_to_index2(dataview.vmin_wavelength, data)
+        min_slice = wavelength_to_index2(dataview.vmax_wavelength, data)
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
+        min_slice = wavelength_to_index(dataview.vmin_wavelength, data)
+        max_slice = wavelength_to_index(dataview.vmax_wavelength, data)
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        min_slice = wavelength_to_index(dataview.vmin_wavelength, data)
+        max_slice = wavelength_to_index(dataview.vmax_wavelength, data)
         
     return min_slice, max_slice
     
-def v_labels(data_view):
+def v_labels(dataview):
     """
     returns labels for visualization input based on current
-    data_view
+    dataview
     """
-    if data_view.display_ev:
+    if dataview.display_ev:
         min_label = 'Min ev:'
         max_label = 'Max ev:'
     else:
@@ -221,17 +221,17 @@ def v_labels(data_view):
         max_label = 'Max wavelength:'
     return (min_label, max_label)
     
-def v_text(data_view):
+def v_text(dataview):
     """
     returns text for visualization input based on current
-    data_view
+    dataview
     """
-    if data_view.display_ev:
-        min_text = 1240/data_view.vmin_wavelength
-        max_text = 1240/data_view.vmax_wavelength
+    if dataview.display_ev:
+        min_text = 1240/dataview.vmin_wavelength
+        max_text = 1240/dataview.vmax_wavelength
     else:
-        min_text = data_view.vmin_wavelength
-        max_text = data_view.vmax_wavelength
+        min_text = dataview.vmin_wavelength
+        max_text = dataview.vmax_wavelength
     return (str(min_text), str(max_text))    
     
 def wavelength_to_index(wavelength, data):
@@ -258,18 +258,18 @@ def wavelength_to_index2(wavelength, data):
     
 
     
-def xdata_calc(data, data_view):
+def xdata_calc(data, dataview):
     """
     returns xdata based on data type and current display mode from wavelength
     cube
     """
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         xdata = data.xdata
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         xdata = 1240/data.xdata
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         xdata = 1240/data.xdata
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         xdata = data.xdata
     return xdata
     
@@ -288,7 +288,7 @@ def xdata_calc2(input_xdata, dtype, display_ev):
         xdata = input_xdata
     return xdata
     
-def xdata_calc_cubes(data, data_view):
+def xdata_calc_cubes(data, dataview):
     """
     chooses which data_cube to take xdata from based on data type and
     current display mode. data.xdata is the default xdata, data.ev_xdata
@@ -298,38 +298,38 @@ def xdata_calc_cubes(data, data_view):
     The data with data type ev we are reading currently
     does not have meaning in wavelength, so its result is a placeholder.
     """
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         xdata = data.xdata
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         xdata = data.ev_xdata
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         xdata = 1240/data.xdata
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         xdata = data.xdata
     return xdata
     
-def ydata_calc(data, data_view):
+def ydata_calc(data, dataview):
     """
     returns ydata based on data type and current display mode.
     """    
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
-        ydata = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]        
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        wavelength_data = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
+        ydata = data.ycube[dataview.ycoordinate, dataview.xcoordinate,:]        
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        wavelength_data = data.ycube[dataview.ycoordinate, dataview.xcoordinate,:]
         ydata = []
         for index, lambda_photon_count in enumerate(wavelength_data):
             ev_photon_count = (lambda_photon_count)*(data.xdata[index]**2/1240)
             ydata.append(ev_photon_count)
         ydata = np.array(ydata)
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':
-        ev_data = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':
+        ev_data = data.ycube[dataview.ycoordinate, dataview.xcoordinate,:]
         ydata = []
         for index,ev_photon_count in enumerate(ev_data):
             wavelength_photon_count = (ev_photon_count)*(1240/data.xdata[index])
             ydata.append(wavelength_photon_count)
         ydata = np.array(ydata)
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
-        ydata = data.ycube[data_view.ycoordinate, data_view.xcoordinate,:]        
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
+        ydata = data.ycube[dataview.ycoordinate, dataview.xcoordinate,:]        
     return ydata
     
 def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):
@@ -356,19 +356,19 @@ def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):
         ydata = input_ydata        
     return ydata
 
-def yimage_calc(data, data_view):
+def yimage_calc(data, dataview):
     """
     returns yimage based on data type and current display mode.
     """
-    slice1 = data_view.slider_val
+    slice1 = dataview.slider_val
     
-    if data_view.display_ev and data.xdata_info['data_type'] == 'ev':
+    if dataview.display_ev and data.xdata_info['data_type'] == 'ev':
         yimage = data.ycube[:,:,slice1]
-    elif data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         yimage = (data.ycube[:,:,slice1])*(data.xdata[slice1]**2/1240)
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'ev':   
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'ev':   
         yimage = (data.ycube[:,:,slice1])*(data.xdata[slice1])
-    elif not data_view.display_ev and data.xdata_info['data_type'] == 'wavelength':
+    elif not dataview.display_ev and data.xdata_info['data_type'] == 'wavelength':
         yimage = data.ycube[:,:,slice1]
     
     return yimage

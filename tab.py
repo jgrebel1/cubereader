@@ -51,8 +51,8 @@ class Tab(QtGui.QWidget):
         self.basename = analysis.get_file_basename(self.filename)
         self.data = data_holder.Data(self.filename)
         self.maxval = analysis.find_maxval(self.data.ycube[...])
-        self.dimension1, self.dimension2, self.number_of_slices = analysis.get_dimensions(self.data.ycube) 
-        self.data_view = data_view.DataView(self.maxval, self.number_of_slices)
+        dimensions = analysis.get_dimensions(self.data.ycube) 
+        self.dataview = data_view.DataView(self.maxval, dimensions)
         self.convert_mutex = QtCore.QMutex()
         self.bool_press = False
         self.make_spectrum_holder()
@@ -68,14 +68,14 @@ class Tab(QtGui.QWidget):
         self.img_axes = self.fig.add_subplot(121)
         self.img = plot_tools.initialize_image(self.img_axes,
                                                self.data,
-                                               self.data_view)
+                                               self.dataview)
         self.marker, = self.img_axes.plot(0,0,'wo')
         self.cbar = plt.colorbar(self.img)
         self.set_color_bar_settings()
         self.graph_axes = self.fig.add_subplot(122)  
         self.img2 = plot_tools.initialize_graph(self.graph_axes,
                                                 self.data,
-                                                self.data_view)
+                                                self.dataview)
 
         # Create the navigation toolbar, tied to the canvas
         #
@@ -168,10 +168,10 @@ class Tab(QtGui.QWidget):
         """
         self. img2 = plot_tools.change_display(self.graph_axes,
                                                self.data,
-                                               self.data_view)
+                                               self.dataview)
                                                
-        min_label, max_label = analysis.v_labels(self.data_view)
-        min_text, max_text = analysis.v_text(self.data_view)
+        min_label, max_label = analysis.v_labels(self.dataview)
+        min_text, max_text = analysis.v_text(self.dataview)
         
         self.label_vmin_slice.setText(min_label)           
         self.label_vmax_slice.setText(max_label)               
@@ -227,7 +227,7 @@ class Tab(QtGui.QWidget):
         exports the current graph to a two column excel file in the
         original file's folder
         """
-        export.export_spectrum(self.filename, self.data, self.data_view)
+        export.export_spectrum(self.filename, self.data, self.dataview)
         
     def export_cube(self):
         """
@@ -236,17 +236,17 @@ class Tab(QtGui.QWidget):
         
         format is xdata, spectrum etc.
         """
-        export.export_cube(self.filename, self.data, self.data_view)
+        export.export_cube(self.filename, self.data, self.dataview)
     
     def initialize_vbox(self,label_vmin_slice, label_vmax_slice,
                              textbox_vmin_slice, textbox_vmax_slice):
-        if self.data_view.display_ev:
+        if self.dataview.display_ev:
             self.label_vmin_slice.setText('Min ev:')
             self.label_vmax_slice.setText('Max ev:')
         else:
             self.label_vmin_slice.setText('Min wavelength:')
             self.label_vmax_slice.setText('Max wavelength:')
-        xdata = analysis.xdata_calc(self.data, self.data_view)
+        xdata = analysis.xdata_calc(self.data, self.dataview)
         textbox_vmin_slice.setText(str(xdata[0]))
         textbox_vmax_slice.setText(str(xdata[-1]))
         self.update_visualization_settings()
@@ -257,33 +257,33 @@ class Tab(QtGui.QWidget):
             return
         
         convert_to_ev.ConvertEvCube(self.data.hdf5, self.data.xdata, 
-                                    self.dimension1, self.dimension2,
+                                    self.dataview.dimension1, self.dataview.dimension2,
                                     self.convert_mutex)
                     
     def make_spectrum_holder(self):
         self.spectrum_holder = spectrum_holder.SpectrumHolder(self.filename,
-                                                              self.dimension1,
-                                                              self.dimension2)
+                                                              self.dataview.dimension1,
+                                                              self.dataview.dimension2)
                                                               
     def move_down(self):
         """move marker down and update graph"""
-        navigation_tools.move_down(self.data_view, self.dimension1)
+        navigation_tools.move_down(self.dataview, self.dataview.dimension1)
         self.update_graph()
         
     
     def move_left(self):
         """move marker left and update graph"""
-        navigation_tools.move_left(self.data_view)
+        navigation_tools.move_left(self.dataview)
         self.update_graph()
     
     def move_right(self):
         """move marker right and update graph"""
-        navigation_tools.move_right(self.data_view, self.dimension2)
+        navigation_tools.move_right(self.dataview, self.dataview.dimension2)
         self.update_graph()
       
     def move_up(self):
         """move marker up and update graph"""
-        navigation_tools.move_up(self.data_view)
+        navigation_tools.move_up(self.dataview)
         self.update_graph()
       
     def on_motion(self, event):        
@@ -293,7 +293,7 @@ class Tab(QtGui.QWidget):
         if self.bool_press is False: return
         if event.inaxes != self.img.axes: return
     
-        navigation_tools.change_coordinates(event, self.data_view)
+        navigation_tools.change_coordinates(event, self.dataview)
         self.update_graph()
         self.canvas.draw()
 
@@ -305,7 +305,7 @@ class Tab(QtGui.QWidget):
         the lower third sets min color value, and the middle pops up a
         window asking for custom values.
         """
-        color.on_pick_color_cube(event, self.img, self.data, self.data_view)
+        color.on_pick_color_cube(event, self.img, self.data, self.dataview)
         self.canvas.draw()      
         
     def on_press_image(self, event):
@@ -321,7 +321,7 @@ class Tab(QtGui.QWidget):
     
         if not contains: return
             
-        navigation_tools.change_coordinates(event, self.data_view)
+        navigation_tools.change_coordinates(event, self.dataview)
         self.bool_press = True
         self.update_graph()
 
@@ -333,12 +333,12 @@ class Tab(QtGui.QWidget):
     def open_visualization(self):
         """opens mayavi window"""
         self.data.check_for_ev_cube(self.data.hdf5)
-        ycube = analysis.mayavi_cube(self.data, self.data_view)
+        ycube = analysis.mayavi_cube(self.data, self.dataview)
         if ycube == []:
             print "No ev cube in file. Press Make ev Cube"
             return
         min_slice, max_slice = analysis.mayavi_slices(self.data,
-                                                      self.data_view)
+                                                      self.dataview)
         try:
             ycube_slice = ycube[:,:,min_slice:max_slice]
         except ValueError:
@@ -348,62 +348,62 @@ class Tab(QtGui.QWidget):
         
     def open_wraith(self):
         """opens wraith window"""
-        xdata = analysis.xdata_calc(self.data, self.data_view)
-        ydata = analysis.ydata_calc(self.data, self.data_view)
+        xdata = analysis.xdata_calc(self.data, self.dataview)
+        ydata = analysis.ydata_calc(self.data, self.dataview)
         self.wraith_window = wraith_for_cubereader.Form(self.filename,
                                                         self.data,
-                                                        self.data_view,
+                                                        self.dataview,
                                                         self.spectrum_holder)
         self.wraith_window.show()                                                  
        
     def reset_colors(self):
-        color.reset_colors_cube(self.img, self.data, self.data_view)           
+        color.reset_colors_cube(self.img, self.data, self.dataview)           
                 
     def set_color_bar_settings(self):
-        self.data_view.maxcolor = self.maxval
-        self.data_view.mincolor = 0
+        self.dataview.maxcolor = self.maxval
+        self.dataview.mincolor = 0
         self.cbar.ax.set_picker(5) 
         
     def set_slider_settings(self):
-        self.slider.setRange(1, self.number_of_slices)
+        self.slider.setRange(1, self.dataview.number_of_slices)
         self.slider.setValue(1)
         self.slider.setTracking(True)
         
     def show_ev(self):     
-        self.data_view.display_ev = True
+        self.dataview.display_ev = True
         self.change_display()
         plot_tools.plot_image(self.img,
                               self.img_axes,
                               self.data,
-                              self.data_view)
+                              self.dataview)
        
     def show_wavelength(self):      
-        self.data_view.display_ev = False
+        self.dataview.display_ev = False
         self.change_display()
         plot_tools.plot_image(self.img,
                               self.img_axes,
                               self.data,
-                              self.data_view)
+                              self.dataview)
 
     def update_graph(self):
-        self.marker.set_xdata(self.data_view.xcoordinate)
-        self.marker.set_ydata(self.data_view.ycoordinate)        
+        self.marker.set_xdata(self.dataview.xcoordinate)
+        self.marker.set_ydata(self.dataview.ycoordinate)        
         plot_tools.plot_graph(self.img2,
                               self.graph_axes, 
                               self.data,
-                              self.data_view)
+                              self.dataview)
 
         
     def update_image_from_slider(self, sliderval):
         
-        if self.data_view.display_ev:
-            self.data_view.slider_val = sliderval-1
+        if self.dataview.display_ev:
+            self.dataview.slider_val = sliderval-1
         else:
-            self.data_view.slider_val = self.number_of_slices - sliderval           
+            self.dataview.slider_val = self.dataview.number_of_slices - sliderval           
         plot_tools.plot_image(self.img,
                               self.img_axes,
                               self.data,
-                              self.data_view)
+                              self.dataview)
                               
     def update_visualization_settings(self):
         """
@@ -412,10 +412,10 @@ class Tab(QtGui.QWidget):
         """
         min_input = float(self.textbox_vmin_slice.text())
         max_input = float(self.textbox_vmax_slice.text())
-        if self.data_view.display_ev:
-            self.data_view.vmin_wavelength = 1240/max_input
-            self.data_view.vmax_wavelength = 1240/min_input
+        if self.dataview.display_ev:
+            self.dataview.vmin_wavelength = 1240/max_input
+            self.dataview.vmax_wavelength = 1240/min_input
         else:
-            self.data_view.vmin_wavelength = min_input
-            self.data_view.vmax_wavelength = max_input
+            self.dataview.vmin_wavelength = min_input
+            self.dataview.vmax_wavelength = max_input
 

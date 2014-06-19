@@ -88,9 +88,7 @@ class ViewData(QtGui.QMainWindow):
         
         # Control
         
-        self.imageslicelabel= QtGui.QLabel('Image Slice ev:')
-        maxcolorlabel = QtGui.QLabel('Max Color Value:')
-        mincolorlabel = QtGui.QLabel('Min Color Value:')        
+        self.imageslicelabel= QtGui.QLabel('Image Slice ev:')        
         graphslicelabelx = QtGui.QLabel('Graph Slice X Coordinate:')
         graphslicelabely = QtGui.QLabel('Graph Slice Y Coordinate:')
         self.wavelength = QtGui.QRadioButton("wavelength", self)
@@ -122,9 +120,6 @@ class ViewData(QtGui.QMainWindow):
         
         grid.addWidget(self.wavelength,1,4)
         grid.addWidget(self.ev,2,4)
-        
-        self.update = QtGui.QPushButton("Update")
-        grid.addWidget(self.update,1,5)
 
 
 
@@ -157,6 +152,25 @@ class ViewData(QtGui.QMainWindow):
         self.connect_events()
         self.connect_shortcuts()
         self.show()
+        
+    def change_display(self):
+        """
+        changes the view between ev and wavelength
+        """
+        self.img2 = plot_tools.change_display(self.graph_axes,
+                                               self.data,
+                                               self.dataview)
+                                               
+        self.update_label() 
+        
+    def closeEvent(self, event):
+        """closes hdf5 files before closing window"""
+        try:
+            if self.data.hdf5:
+                self.data.hdf5.close()
+        except:
+            pass
+        event.accept()
     
 
     def connect_events(self):
@@ -171,12 +185,14 @@ class ViewData(QtGui.QMainWindow):
                      self.update_image_from_slider)
         self.cidpick = self.canvas.mpl_connect('pick_event',
                                                self.on_pick_color)
-        self.connect(self.imageslice, SIGNAL('editingFinished ()'), 
-                     self.update_dataview)
-        self.connect(self.graphslicex, SIGNAL('editingFinished ()'), 
-                     self.update_dataview)
-        self.connect(self.graphslicey, SIGNAL('editingFinished ()'), 
-                     self.update_dataview)
+        self.connect(self.imageslice, QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_imageslice_from_control)
+        self.connect(self.graphslicex, QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_graphslicex_from_control)
+        self.connect(self.graphslicey, QtCore.SIGNAL('editingFinished ()'), 
+                     self.update_graphslicey_from_control)
+        self.ev.clicked.connect(self.show_ev)
+        self.wavelength.clicked.connect(self.show_wavelength)
             
     def connect_shortcuts(self):
         self.shortcut_up = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Up")),
@@ -276,12 +292,76 @@ class ViewData(QtGui.QMainWindow):
         self.slider.setRange(1, self.dataview.number_of_slices)
         self.slider.setValue(1)
         self.slider.setTracking(True)
-    
-    def update_dataview(self):
-        'updates dataview from control'
-        self.dataview.slider_val = 
-        self.dataview.xcoordinate = 
-        self.dataview.ycoordinate = 
+
+    def show_ev(self):     
+        self.dataview.display_ev = True
+        self.change_display()
+        plot_tools.plot_image(self.img,
+                              self.img_axes,
+                              self.data,
+                              self.dataview)
+       
+    def show_wavelength(self):      
+        self.dataview.display_ev = False
+        self.change_display()
+        plot_tools.plot_image(self.img,
+                              self.img_axes,
+                              self.data,
+                              self.dataview)
+    def update_control(self):
+        xdata = analysis.xdata_calc(self.data, self.dataview) 
+        slice1 = self.dataview.slider_val
+        if self.dataview.display_ev:
+            self.imageslice.setText('%0.2f'%float(xdata[slice1]))
+        else:
+            self.imageslice.setText('%0.0f '%float(xdata[slice1]))
+        self.graphslicex.setText('%d'%self.dataview.xcoordinate)
+        self.graphslicey.setText('%d'%self.dataview.ycoordinate)
+        
+    def update_graphslicex_from_control(self):
+        """
+        takes control panel input and changes the current tab's
+        x coordinate for the displayed graph
+        """
+        try:
+            self.dataview.xcoordinate = int(self.graphslicex.text())
+        except:
+            return
+        self.marker.set_xdata(self.dataview.xcoordinate)
+        self.update_graph()
+
+
+            
+    def update_graphslicey_from_control(self):
+        """
+        takes control panel input and changes the current tab's
+        y coordinate for the displayed graph
+        """
+        try:
+            self.dataview.ycoordinate = int(self.graphslicey.text())
+        except:
+            return
+        self.marker.set_ydata(self.dataview.ycoordinate)
+        self.update_graph()
+        
+    def update_imageslice_from_control(self):
+        """
+        updates the imageslice from the input from the control panel. 
+        the image displayed is the image with the first integer value
+        of the input
+        """
+        try:
+            slice_input = float(self.imageslice.text())
+        except:
+            return
+        if self.dataview.display_ev:
+            imageval = analysis.ev_to_index(slice_input, self.data) 
+            self.slider.setValue(imageval) 
+        else:      
+            imageval = analysis.wavelength_to_index(slice_input, self.data)
+            self.slider.setValue(self.dataview.number_of_slices - 1-imageval) 
+        self.update_graph()
+
         
     def update_graph(self):
         self.marker.set_xdata(self.dataview.xcoordinate)
@@ -290,6 +370,7 @@ class ViewData(QtGui.QMainWindow):
                               self.graph_axes, 
                               self.data,
                               self.dataview)
+        self.update_control()
                               
     def update_image_from_slider(self, sliderval):
         
@@ -301,5 +382,11 @@ class ViewData(QtGui.QMainWindow):
                               self.img_axes,
                               self.data,
                               self.dataview)
+        self.update_control()
 
+    def update_label(self):
+        if self.ev.isChecked():
+            self.imageslicelabel.setText('Image Slice ev:')
+        else:
+            self.imageslicelabel.setText('Image Slice wavelength:')
         

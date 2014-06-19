@@ -165,11 +165,11 @@ class ViewData(QtGui.QMainWindow):
         
     def closeEvent(self, event):
         """closes hdf5 files before closing window"""
-        try:
-            if self.data.hdf5:
-                self.data.hdf5.close()
-        except:
-            pass
+       # try:
+       #     if self.data.hdf5:
+       #         self.data.hdf5.close()
+       # except:
+       #     pass
         event.accept()
     
 

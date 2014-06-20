@@ -29,10 +29,11 @@ from wraith import fitting_machinery
 
 plt.ioff()
 
-class CubeFit(QtGui.QWidget):
+class CubeFit(QtGui.QMainWindow):
 
     def __init__(self,filename, parent=None):
-        super(CubeFit, self).__init__(parent) 
+        #super(CubeFit, self).__init__(parent) 
+        QtGui.QMainWindow.__init__(self, parent)
         self.filename = filename
         self.fit_data = data_holder.FitData(self.filename)
         self.peak_list = self.get_peak_list(self.fit_data)
@@ -50,6 +51,7 @@ class CubeFit(QtGui.QWidget):
         
     def make_frame(self):
         """populate screen"""
+        self.main_frame = QtGui.QWidget()
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)            
@@ -129,8 +131,8 @@ class CubeFit(QtGui.QWidget):
         grid.addLayout(vbox1,0,0)
         grid.addLayout(vbox2,0,1)
         
-        
-        self.setLayout(grid)
+        self.main_frame.setLayout(grid)
+        self.setCentralWidget(self.main_frame)
         self.connect_events()
         self.connect_shortcuts()
                                                

@@ -37,7 +37,7 @@ class ControlRelay(QtCore.QObject):
         
     def update_current(self):
         self.current_tab = self.tab.currentWidget()
-        if self.current_tab.data_view.display_ev:
+        if self.current_tab.dataview.display_ev:
             self.window.ev.setChecked(True)
         else:
             self.window.wavelength.setChecked(True)
@@ -55,12 +55,12 @@ class ControlRelay(QtCore.QObject):
         x coordinate for the displayed graph
         """
 
-        self.current_tab.data_view.xcoordinate = int(self.window.graphslicex.text())
-        self.current_tab.marker.set_xdata(self.current_tab.data_view.xcoordinate)        
+        self.current_tab.dataview.xcoordinate = int(self.window.graphslicex.text())
+        self.current_tab.marker.set_xdata(self.current_tab.dataview.xcoordinate)        
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
                               self.current_tab.data,
-                              self.current_tab.data_view)
+                              self.current_tab.dataview)
 
 
             
@@ -69,12 +69,12 @@ class ControlRelay(QtCore.QObject):
         takes control panel input and changes the current tab's
         y coordinate for the displayed graph
         """
-        self.current_tab.data_view.ycoordinate = int(self.window.graphslicey.text())
-        self.current_tab.marker.set_ydata(self.current_tab.data_view.ycoordinate)        
+        self.current_tab.dataview.ycoordinate = int(self.window.graphslicey.text())
+        self.current_tab.marker.set_ydata(self.current_tab.dataview.ycoordinate)        
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
                               self.current_tab.data,
-                              self.current_tab.data_view)   
+                              self.current_tab.dataview)   
 
 
 
@@ -85,7 +85,7 @@ class ControlRelay(QtCore.QObject):
         of the input
         """
         slice_input = float(self.window.imageslice.text())
-        if self.current_tab.data_view.display_ev:
+        if self.current_tab.dataview.display_ev:
             imageval = analysis.ev_to_index(slice_input, 
                                             self.current_tab.data) 
             self.current_tab.slider.setValue(imageval) 
@@ -100,22 +100,22 @@ class ControlRelay(QtCore.QObject):
         takes control panel input and changes the current tab's
         max color for the displayed graph
         """
-        self.current_tab.data_view.currentmaxvalcolor = int(self.window.maxcolor.text())
+        self.current_tab.dataview.currentmaxvalcolor = int(self.window.maxcolor.text())
         plot_tools.plot_image(self.current_tab.img,
                               self.current_tab.img_axes,
                               self.current_tab.data,
-                              self.current_tab.data_view)  
+                              self.current_tab.dataview)  
 
     def update_mincolor_from_control(self):
         """
         takes control panel input and changes the current tab's
         min color for the displayed graph
         """        
-        self.current_tab.data_view.currentminvalcolor = int(self.window.mincolor.text())
+        self.current_tab.dataview.currentminvalcolor = int(self.window.mincolor.text())
         plot_tools.plot_image(self.current_tab.img,
                               self.current_tab.img_axes,
                               self.current_tab.data,
-                              self.current_tab.data_view)  
+                              self.current_tab.dataview)  
               
     def update_values(self):
         """Updates values in main window and clears textboxes"""

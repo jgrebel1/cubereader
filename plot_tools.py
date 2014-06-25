@@ -50,7 +50,8 @@ def initialize_image(axes, data, dataview):
     yimage = analysis.yimage_calc(data, dataview)
     maxval = analysis.maxval_calc(data, dataview)
     
-    img = axes.imshow(yimage, interpolation='nearest', clim = (0,maxval))
+    img = axes.imshow(yimage, interpolation='nearest', clim = (0,maxval),
+                      cmap='spectral')
     
     xdata = analysis.xdata_calc(data, dataview)
     slice1 = dataview.slider_val

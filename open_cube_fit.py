@@ -1,16 +1,18 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Mon Aug 19 16:27:52 2013
 
 @author: JG
 """
+import sys
 import numpy as np
 from numpy import array
 import matplotlib
 from matplotlib import pyplot as plt
-from PySide import QtCore
-from PySide import QtGui
-matplotlib.rcParams['backend.qt4']='PySide'
+from PyQt4 import QtCore
+from PyQt4 import QtGui
+#matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 import h5py
@@ -31,9 +33,20 @@ plt.ioff()
 
 class CubeFit(QtGui.QMainWindow):
 
-    def __init__(self,filename, parent=None):
+    def __init__(self,filename=None, parent=None):
         #super(CubeFit, self).__init__(parent) 
         QtGui.QMainWindow.__init__(self, parent)
+        if filename==None:
+            dialog = QtGui.QFileDialog(self)
+            dialog.setFileMode(QtGui.QFileDialog.ExistingFile)
+            dialog.setNameFilter('HDF5 (*.hdf5)')
+            if dialog.exec_():
+                filenames = dialog.selectedFiles()
+            for name in filenames:
+                if name:
+                    filename = name
+                else:
+                    print 'No file selected'
         self.filename = filename
         self.fit_data = data_holder.FitData(self.filename)
         self.peak_list = self.get_peak_list(self.fit_data)
@@ -54,7 +67,7 @@ class CubeFit(QtGui.QMainWindow):
         self.main_frame = QtGui.QWidget()
         self.fig = plt.figure(figsize=(16.0, 6.0))
         self.canvas = FigureCanvas(self.fig)
-        self.canvas.setParent(self)            
+        self.canvas.setParent(self.main_frame)            
         self.img_axes = self.fig.add_subplot(121)
         self.img = fit_plot_tools.initialize_image(self.img_axes,
                                                    self.fit_data,
@@ -125,7 +138,6 @@ class CubeFit(QtGui.QMainWindow):
         vbox2.addLayout(filter_hbox2)
         vbox2.addWidget(self.button_filter_from_residuals)
         #vbox2.addWidget(self.button_test)
-        
 
         
         grid.addLayout(vbox1,0,0)
@@ -358,3 +370,28 @@ class CubeFit(QtGui.QMainWindow):
         fit_plot_tools.set_image_from_data(self.img, self.img_axes,
                                   self.fit_data, self.fit_data_view)
         
+#main function to start up program
+def main():
+    #matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
+    app = QtGui.QApplication(sys.argv)
+    form = CubeFit()
+    #QApplication.setStyle(QStyleFactory.create('Plastique'))
+    #QApplication.setPalette(QApplication.style().standardPalette())
+    form.show()
+    app.exec_()
+
+def cube_fit():
+    #matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
+    app = QtCore.QCoreApplication.instance()
+    app.form = CubeFit()
+    #QApplication.setStyle(QStyleFactory.create('Plastique'))
+    #QApplication.setPalette(QApplication.style().standardPalette())
+    app.form.show()
+    #app.exec_()
+
+
+#if run from commandline then start up by calling main()
+if __name__ == "__main__":
+    main()
+else:
+   app = QtCore.QCoreApplication.instance()

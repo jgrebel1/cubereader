@@ -4,16 +4,16 @@ Created on Tue Jul 23 17:28:09 2013
 
 @author: JG
 """
-
+import sys
 import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import h5py
 
-from PySide import QtCore
-from PySide import QtGui
-matplotlib.rcParams['backend.qt4']='PySide'
+from PyQt4 import QtCore
+from PyQt4 import QtGui
+#matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 
@@ -372,5 +372,28 @@ class SpectrumHolder(QtGui.QDialog):
         self.spectrum_box = self.textbox_spectrum_box.toPlainText()
         
 
-        
+ #main function to start up program
+def main(filename, dimension1, dimension2):
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+        form = SpectrumHolder(filename, dimension1, dimension2)
+        form.hide()
+        app.exec_()
+        return form
+    else:
+        form = SpectrumHolder(filename, dimension1, dimension2)
+        #app.form.show()
+        return form
+
+#wraith function to start up program from interactive terminal
+def holder(filename, dimension1, dimension2):
+    #matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
+    app = QtCore.QCoreApplication.instance()
+    app.form = SpectrumHolder(filename, dimension1, dimension2)
+    #QApplication.setStyle(QStyleFactory.create('Plastique'))
+    #QApplication.setPalette(QApplication.style().standardPalette())
+    #app.form.show()
+    #app.exec_()
+    return app.form       
         

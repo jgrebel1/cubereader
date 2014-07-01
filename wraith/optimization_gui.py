@@ -3,11 +3,17 @@ import sys, os, csv, string
 from pprint import *
 
 #import Qt 
-from PySide.QtCore import Signal
-from PySide.QtCore import Slot
-from PySide.QtCore import *
-from PySide.QtGui import *
-from PySide import QtCore, QtGui
+#from PySide.QtCore import Signal
+#from PySide.QtCore import Slot
+#from PySide.QtCore import *
+#from PySide.QtGui import *
+#from PySide import QtCore, QtGui
+
+from PyQt4.QtCore import pyqtSignal as Signal
+#from PyQt4.QtCore import Slot
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from PyQt4 import QtCore, QtGui
 
 #import pylab, which includes scipy and numpy
 from pylab import *

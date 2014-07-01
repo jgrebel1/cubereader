@@ -5,8 +5,8 @@ Created on Mon Aug 19 18:08:16 2013
 @author: JG
 """
 import os
-from PySide import QtGui
-from PySide import QtCore
+from PyQt4 import QtGui
+from PyQt4 import QtCore
 import numpy as np
 
 #project specific items

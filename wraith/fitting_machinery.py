@@ -3,7 +3,7 @@ import re
 from pylab import *
 from scipy.optimize import leastsq
 from fitting_functions import *
-from PySide import QtCore
+from PyQt4 import QtCore
 import copy
 
 ###########################################

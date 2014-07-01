@@ -15,6 +15,7 @@ import h5py
 
 import analysis
 import generic_thread
+import data_holder
 
 
 class RebinHDF5(QtGui.QMainWindow):

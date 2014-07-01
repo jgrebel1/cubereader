@@ -371,13 +371,19 @@ class ViewData(QtGui.QMainWindow):
         
 #main function to start up program
 def main(cube=None):
-    #matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
-    app = QtGui.QApplication(sys.argv)
-    form = ViewData(cube)
-    #QApplication.setStyle(QStyleFactory.create('Plastique'))
-    #QApplication.setPalette(QApplication.style().standardPalette())
-    form.show()
-    app.exec_()
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+        form = ViewData(cube)
+        form.show()
+        app.exec_()
+        return form
+    else:
+        form = ViewData(cube)
+        #app.form.show()
+        return form
+    
+
     
 #function to start up program from interactive terminal
 def view_data(cube = None):

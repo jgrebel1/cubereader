@@ -9,11 +9,12 @@ import sys, os, csv, string
 from pprint import *
 
 #import Qt 
-from PySide.QtCore import Signal
-from PySide.QtCore import Slot
+#from PySide.QtCore import Signal
+#from PySide.QtCore import Slot
+
 #from PySide.QtCore import *
 #from PySide.QtGui import *
-from PySide import QtCore, QtGui
+from PyQt4 import QtCore, QtGui
 
 #import iPython kernel
 
@@ -54,9 +55,9 @@ import analysis
 
 #Main window to control plotting
 class Form(QMainWindow):
-    def __init__(self,filename, data, data_view, spectrum_holder, parent=None):
+    def __init__(self, data, data_view, spectrum_holder, parent=None):
         super(Form, self).__init__(parent)
-        self.filename = filename
+        self.filename = data.filename
         self.xdata = module_copy.copy(analysis.xdata_calc(data, data_view))
         self.xdata = np.float64(self.xdata)
         self.data = data
@@ -1146,20 +1147,24 @@ class GenericThread(QtCore.QThread):
         return
 
 #main function to start up program
-def main():
-    matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
-    app = QApplication(sys.argv)
-    form = Form()
-    QApplication.setStyle(QStyleFactory.create('Plastique'))
-    QApplication.setPalette(QApplication.style().standardPalette())
-    form.show()
-    app.exec_()
+def main(data, dataview, spectrum_holder):
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+        form = Form(data, dataview, spectrum_holder)
+        form.show()
+        app.exec_()
+        return form
+    else:
+        form = Form(data, dataview, spectrum_holder)
+        #app.form.show()
+        return form
 
 #wraith function to start up program from interactive terminal
-def wraith():
+def wraith(data, dataview, spectrum_holder):
     matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
     app = QtCore.QCoreApplication.instance()
-    app.form = Form()
+    app.form = Form(data, dataview, spectrum_holder)
     QApplication.setStyle(QStyleFactory.create('Plastique'))
     QApplication.setPalette(QApplication.style().standardPalette())
     app.form.show()

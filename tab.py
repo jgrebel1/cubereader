@@ -348,10 +348,7 @@ class Tab(QtGui.QWidget):
         
     def open_wraith(self):
         """opens wraith window"""
-        xdata = analysis.xdata_calc(self.data, self.dataview)
-        ydata = analysis.ydata_calc(self.data, self.dataview)
-        self.wraith_window = wraith_for_cubereader.Form(self.filename,
-                                                        self.data,
+        self.wraith_window = wraith_for_cubereader.Form(self.data,
                                                         self.dataview,
                                                         self.spectrum_holder)
         self.wraith_window.show()                                                  

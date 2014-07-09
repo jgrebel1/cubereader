@@ -6,11 +6,11 @@ Gui Demo for some of the structure.
 """
 
 import os
-from pyface.qt import QtGui, QtCore
+#from pyface.qt import QtGui, QtCore
 import sys
 import matplotlib
-#from PySide import QtCore
-#from PySide import QtGui
+from PySide import QtCore
+from PySide import QtGui
 #matplotlib.rcParams['backend.qt4']='PySide'
 #project specific items
 

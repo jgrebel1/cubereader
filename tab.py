@@ -7,7 +7,7 @@ Created on Wed Jul 10 13:14:51 2013
 
 import os
 os.environ['ETS_TOOLKIT'] = 'qt4'
-from pyface.qt import QtGui, QtCore
+#from pyface.qt import QtGui, QtCore
 from traits.api import HasTraits, Instance, on_trait_change, \
     Int, Dict
 from traitsui.api import View, Item

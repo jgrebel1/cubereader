@@ -76,9 +76,13 @@ def plot_image(img, axes, data, dataview):
     yimage = analysis.yimage_calc(data, dataview)
     img.set_array(yimage)
     max_color, min_color = analysis.colors_calc(data, dataview)
-    img.set_clim(vmax=max_color,
-                 vmin=min_color)
-                 
+    if dataview.auto_color:
+        img.autoscale()
+        vmin, vmax = img.get_clim()
+        dataview.mincolor = vmin
+        dataview.maxcolor = vmax
+    else:
+        img.set_clim(vmax=max_color, vmin=min_color)                
     xdata = analysis.xdata_calc(data, dataview)    
     slice1 = dataview.slider_val
     if dataview.display_ev:

@@ -23,6 +23,7 @@ class DataView():
         self.slider_val = 1
         self.vmin_wavelength = 300
         self.vmax_wavelength = 800
+        self.auto_color = True
         
         
 class FitDataView():

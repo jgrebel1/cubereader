@@ -15,13 +15,18 @@ matplotlib.rcParams['backend.qt4']='PySide'
 import analysis
 import fit_analysis
 
-#def auto_adjust(img, data, data_view):
-    #maxval = analysis.maxval_calc(data, data_view)
-#    img.set_clim(None, None)
-#    img.autoscale()
-    #data_view.maxcolor = None
-    #data_view.mincolor = None 
-#    pass
+def auto_adjust(img, data, dataview):
+    dataview.auto_color = True
+    img.autoscale()
+    vmin, vmax = img.get_clim()
+    dataview.maxcolor = vmax
+    dataview.mincolor = vmin
+    
+def manual_adjust(img, data, dataview):
+    dataview.auto_color = false
+    vmin, vmax = img.get_clim()
+    dataview.maxcolor = vmax
+    dataview.mincolor = vmin
 
 def on_pick_color_cube(event, img, data, data_view):
     """
@@ -59,8 +64,10 @@ def on_pick_color_cube(event, img, data, data_view):
             img.set_clim(vmin=data_view.mincolor)
         if colorwindow.resetvalue:
             reset_colors_cube(img, data, data_view)
-#        if colorwindow.adjust:
-#            auto_adjust(img, data, data_view)
+        if colorwindow.autoadjust_cb.checkState():
+            auto_adjust(img, data, data_view)
+        else:
+            manual_adjust(img, data, data_view)
     return bool_reset_colors
     
 def on_pick_color_fit(event, img, data, data_view):
@@ -138,11 +145,11 @@ class ColorWindow(QtGui.QDialog):
         
         self.resetbutton = QtGui.QPushButton("Reset")   
         self.resetvalue = False
-#        self.autoadjustbutton = QtGui.QPushButton("Auto Adjust")
+        self.autoadjust_cb = QtGui.QCheckBox("Auto Adjust")
         
         grid.addWidget(mincolorlabel,2,0)
         grid.addWidget(self.mincolor,2,1)
-#        grid.addWidget(self.autoadjustbutton,3,0)
+        grid.addWidget(self.autoadjust_cb,3,0)
         grid.addWidget(self.resetbutton,4,0)
 
         self.okButton = QtGui.QPushButton("OK")
@@ -166,10 +173,6 @@ class ColorWindow(QtGui.QDialog):
         self.setGeometry(300,300,50,50)
         self.connect_events()
         self.show()
-    
-#    def auto_adjust(self):
-#        self.adjust = True
-#        self.accept()
         
     def connect_events(self):
         self.connect(self.okButton, QtCore.SIGNAL('clicked()'),self.accept)

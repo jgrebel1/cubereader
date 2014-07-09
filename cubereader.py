@@ -11,7 +11,7 @@ import sys
 import matplotlib
 #from PySide import QtCore
 #from PySide import QtGui
-matplotlib.rcParams['backend.qt4']='PySide'
+#matplotlib.rcParams['backend.qt4']='PySide'
 #project specific items
 
 

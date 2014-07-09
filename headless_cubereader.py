@@ -24,7 +24,7 @@ import data_holder
 import navigation_tools
 import spectrum_holder
 import view_data
-import wraith_for_cubereader
+import wraith_for_cubereader_2
 
 def load_data(filename=None):
     if filename==None:
@@ -63,7 +63,7 @@ def open_wraith(cube, spectrum_holder):
     """opens wraith window"""
     data = cube[0]
     dataview = cube[1]
-    wraith_window = wraith_for_cubereader.Form(data, dataview, spectrum_holder)
+    wraith_window = wraith_for_cubereader_2.Form(data, dataview, spectrum_holder)
     wraith_window.show()  
     return wraith_window
 

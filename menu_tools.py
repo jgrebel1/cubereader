@@ -10,9 +10,9 @@ Gui Demo.
 import os
 import numpy as np
 import matplotlib
-from PySide import QtCore
-from PySide import QtGui
-matplotlib.rcParams['backend.qt4']='PySide'
+from PyQt4 import QtCore
+from PyQt4 import QtGui
+#matplotlib.rcParams['backend.qt4']='PySide'
         
 def add_actions(self, target, actions):
     """adds menu items to menu"""

@@ -153,7 +153,7 @@ class ConvertToCubeReader():
 
         if not self.stop_convert:
             self.generate_output(output_filename, self.temp_hdf5, global_bool,
-                                 header,list_xdata)
+                                 header,list_xdata, dimension1, dimension2)
             self.temp_hdf5.close()
             os.remove(output_filename+'temporary')
         self.progress_window.close()            
@@ -199,14 +199,16 @@ class ConvertToCubeReader():
         return datasize
         
     def generate_output(self, output_filename, temp_hdf5, global_bool, header,
-                        list_xdata):
+                        list_xdata, dimension1, dimension2):
         locker = QtCore.QMutexLocker(self.convert_mutex)
         output_file = h5py.File(output_filename,'w')
         data_holder = output_file.create_group("Experiments/__unnamed__")       
         self.build_xdata(data_holder, temp_hdf5, list_xdata)
         #self.info = self.build_info()
         self.build_ycube(data_holder, temp_hdf5, global_bool)
-        self.write_header(data_holder, header)            
+        self.write_header(data_holder, header)
+        self.add_formatting(output_file, data_holder, list_xdata,
+                            dimension1, dimension2)            
         output_file.close()
               
     def read_into_cube(self, fid, temp_hdf5, global_bool,
@@ -252,4 +254,19 @@ class ConvertToCubeReader():
         return list_xdata
                             
     def write_header(self, data_holder, header):
-        data_holder.attrs['header'] = header        
+        data_holder.attrs['header'] = header      
+        
+    def add_formatting(self, output_file, data_holder, list_xdata,
+                            dimension1, dimension2):
+        output_file.attrs['file_format'] = 'mf1 compatible with Hyperspy'
+        output_file.attrs['file_format_version'] = 1.2
+        data_holder.create_group('axis-0')
+        data_holder['axis-0'].attrs['size'] = dimension1 
+        data_holder.create_group('axis-1')
+        data_holder['axis-1'].attrs['size'] = dimension2 
+        data_holder.create_group('axis-2')
+        data_holder['axis-2'].attrs['size'] = np.shape(list_xdata)
+        data_holder.create_group('metadata')
+        data_holder.create_group('original_metadata')
+        data_holder.create_group('axes')
+        data_holder.create_group('attributes')

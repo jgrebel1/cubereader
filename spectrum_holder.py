@@ -11,9 +11,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import h5py
 
-from PyQt4 import QtCore
-from PyQt4 import QtGui
-#matplotlib.rcParams['backend.qt4']='PySide'
+from PySide import QtCore
+from PySide import QtGui
+matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 

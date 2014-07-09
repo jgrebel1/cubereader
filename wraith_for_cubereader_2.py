@@ -14,7 +14,7 @@ from pprint import *
 
 #from PySide.QtCore import *
 #from PySide.QtGui import *
-from PyQt4 import QtCore, QtGui
+from PySide import QtCore, QtGui
 
 #import iPython kernel
 

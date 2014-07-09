@@ -7,8 +7,8 @@ Created on Wed Jul 10 13:33:05 2013
 import os
 import numpy as np
 import matplotlib
-from PyQt4 import QtCore
-from PyQt4 import QtGui
+from PySide import QtCore
+from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
 
 #project specific items

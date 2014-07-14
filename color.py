@@ -23,7 +23,7 @@ def auto_adjust(img, data, dataview):
     dataview.mincolor = vmin
     
 def manual_adjust(img, data, dataview):
-    dataview.auto_color = false
+    dataview.auto_color = False
     vmin, vmax = img.get_clim()
     dataview.maxcolor = vmax
     dataview.mincolor = vmin
@@ -64,7 +64,7 @@ def on_pick_color_cube(event, img, data, data_view):
             img.set_clim(vmin=data_view.mincolor)
         if colorwindow.resetvalue:
             reset_colors_cube(img, data, data_view)
-        if colorwindow.autoadjust_cb.checkState():
+        if  colorwindow.result() and colorwindow.autoadjust_cb.checkState():
             auto_adjust(img, data, data_view)
         else:
             manual_adjust(img, data, data_view)
@@ -146,6 +146,7 @@ class ColorWindow(QtGui.QDialog):
         self.resetbutton = QtGui.QPushButton("Reset")   
         self.resetvalue = False
         self.autoadjust_cb = QtGui.QCheckBox("Auto Adjust")
+        self.autoadjust_cb.setChecked(True)
         
         grid.addWidget(mincolorlabel,2,0)
         grid.addWidget(self.mincolor,2,1)

@@ -5,11 +5,10 @@ used Eli Bendersky's (eliben@gmail.com) embeding matplotlib into pyqt
 Gui Demo for some of the structure.
 """
 
-import os
+
 #from pyface.qt import QtGui, QtCore
-import sys
+
 import matplotlib
-from PySide import QtCore
 from PySide import QtGui
 matplotlib.rcParams['backend.qt4']='PySide'
 #project specific items
@@ -21,7 +20,6 @@ import tab
 import control_relay
 import menu_tools
 import convert_file
-import header
 import rebin_hdf5
 import open_cube_fit
 

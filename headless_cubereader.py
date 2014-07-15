@@ -4,24 +4,16 @@ Created on Tue Jun 17 11:27:41 2014
 
 @author: jg
 """
-#from PySide import QtCore
-#from PySide import QtGui
-from PySide import QtCore
+
 from PySide import QtGui
-#import matplotlib
-from matplotlib import pyplot as plt
+import matplotlib
 matplotlib.rcParams['backend.qt4']='PySide'
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 
 #project specific items
 
 import analysis
-import color
 import data_view
-import plot_tools
 import data_holder
-import navigation_tools
 import spectrum_holder
 import view_data
 import wraith_for_cubereader_2
@@ -40,7 +32,6 @@ def load_data(filename=None):
                 print 'No file selected'
     data = data_holder.Data(filename)
     maxval = analysis.find_maxval(data.ycube[...])
-    dimension1, dimension2, number_of_slices = analysis.get_dimensions(data.ycube) 
     dimensions = analysis.get_dimensions(data.ycube)
     dataview = data_view.DataView(maxval, dimensions)
     #convert_mutex = QtCore.QMutex()

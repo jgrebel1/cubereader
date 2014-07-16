@@ -51,7 +51,7 @@ from wraith.parameter_gui import *
 from wraith.optimization_gui import *
 
 import analysis
-
+import spectrum_viewer
 
 #Main window to control plotting
 class Form(QMainWindow):
@@ -65,6 +65,7 @@ class Form(QMainWindow):
         self.xcoordinate = module_copy.copy(data_view.xcoordinate)
         self.ycoordinate = module_copy.copy(data_view.ycoordinate)
         self.spectrum_holder = spectrum_holder
+        self.spectrum_viewer = spectrum_viewer.SpectrumViewer(spectrum_holder)
         self.display_ev = copy(data_view.display_ev)
         self.setWindowTitle('Interactive XPS Explorer')
         self.ignore_signals = False
@@ -379,7 +380,7 @@ class Form(QMainWindow):
                 peak_list = []
                 for peak in self.files[filename].get_spectrum(row).peaks.peak_list:
                     peak_list.append(peak.get_spec())
-                self.spectrum_holder.textbox_spectrum_box.setText(pformat(peak_list, width = 20))
+                self.spectrum_viewer.textbox_spectrum_box.setText(pformat(peak_list, width = 20))
         self.on_show()
         
     def clear_spectrum_holder(self):
@@ -422,6 +423,7 @@ class Form(QMainWindow):
     def fit_cube_process(self):
         locker = QtCore.QMutexLocker(self.spectrum_holder.cube_mutex)
         self.spectrum_holder.notify_cube_fitting()
+        self.spectrum_viewer.textbox_spectrum_box.setReadOnly(True)
         (rows,columns,slices) = np.shape(self.data.ycube[...])
         #self.progress_bar = self.fit_cube_progress_bar(rows*columns)
 
@@ -468,6 +470,8 @@ class Form(QMainWindow):
                 self.update_progress(value)  
         self.progress_window.close()
         self.spectrum_holder.notify_cube_fitted()
+        self.spectrum_viewer.textbox_spectrum_box.setReadOnly(False)
+        self.spectrum_viewer.label_cube_fitted.setText("Cube Box Loaded")
         
     def fit_cube_progress_bar(self, pixels):
         self.progress_window = QtGui.QWidget()
@@ -490,6 +494,7 @@ class Form(QMainWindow):
     def stop_fit_now(self):
         self.stop_fit = True
         self.spectrum_holder.stop_fit()
+        self.spectrum_viewer.textbox_spectrum_box.setReadOnly(False)
         self.progress_window.close()
     
     def get_normalized_integrated_residuals(self, spectrum):
@@ -501,7 +506,7 @@ class Form(QMainWindow):
         
     
     def show_spectrum_holder(self):
-        self.spectrum_holder.show()
+        self.spectrum_viewer.show()
         
     
     def plot_summary_csv(self):
@@ -1035,6 +1040,7 @@ def main(data, dataview, spectrum_holder):
     else:
         form = Form(data, dataview, spectrum_holder)
         #app.form.show()
+        app.exec_()
         return form
 
 #wraith function to start up program from interactive terminal

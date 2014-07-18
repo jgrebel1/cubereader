@@ -25,8 +25,10 @@ class SpectrumViewer(QtGui.QDialog):
         self.setWindowTitle('Spectrum Holder for %s'%basename)
         self.resize(600,300)
         self.spectrum_holder = spectrum_holder
+        spectrum_box = spectrum_holder.spectrum_box
         self.cube_mutex = QtCore.QMutex()
         self.inputs()
+        self.textbox_spectrum_box.setText(spectrum_box)
     
     def inputs(self):
         """populate screen"""

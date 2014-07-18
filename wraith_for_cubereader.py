@@ -1,5 +1,5 @@
 """
-A modified wraith program to work with mf1read
+A modified wraith program to work with Cubereader
 """
 
 #!/usr/bin/env ipython
@@ -823,6 +823,7 @@ class Form(QMainWindow):
         self.main_frame.addWidget(right_widget)
 
         self.setCentralWidget(self.main_frame)
+        self.show()
     
     def create_status_bar(self):
         self.status_text = QLabel("Please load a data file")

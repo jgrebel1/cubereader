@@ -21,21 +21,13 @@ import data_view
 import plot_tools
 import data_holder
 import navigation_tools
+import file_tools
 
 class ViewData(QtGui.QMainWindow):
     def __init__(self,cube=None, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         if cube == None:
-            dialog = QtGui.QFileDialog(self)
-            dialog.setFileMode(QtGui.QFileDialog.ExistingFile)
-            dialog.setNameFilter('HDF5 (*.hdf5)')
-            if dialog.exec_():
-                filenames = dialog.selectedFiles()
-            for name in filenames:
-                if name:
-                    filename = name
-                else:
-                    print 'No file selected'   
+            filename = file_tools.file_dialog()
             cube = self.load_data(filename)
         self.data = cube[0] 
         self.dataview = cube[1]
@@ -133,13 +125,8 @@ class ViewData(QtGui.QMainWindow):
         self.update_label() 
         
     def closeEvent(self, event):
-        """closes hdf5 files before closing window"""
-       # try:
-       #     if self.data.hdf5:
-       #         self.data.hdf5.close()
-       # except:
-       #     pass
         event.accept()
+        #self.hide()
     
 
     def connect_events(self):
@@ -307,7 +294,10 @@ class ViewData(QtGui.QMainWindow):
         except:
             return
         self.marker.set_xdata(self.dataview.xcoordinate)
-        self.update_graph()
+        try:
+            self.update_graph()
+        except ValueError:
+            return
 
 
             
@@ -321,7 +311,10 @@ class ViewData(QtGui.QMainWindow):
         except:
             return
         self.marker.set_ydata(self.dataview.ycoordinate)
-        self.update_graph()
+        try:
+            self.update_graph()
+        except ValueError:
+            return
         
     def update_imageslice_from_control(self):
         """
@@ -380,7 +373,7 @@ def main(cube=None):
         return form
     else:
         form = ViewData(cube)
-        #app.form.show()
+        app.exec_()
         return form
     
 

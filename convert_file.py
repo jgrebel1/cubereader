@@ -5,16 +5,15 @@ Created on Fri Jul 12 19:08:08 2013
 @author: JG
 """
 import os
+import sys
 from PySide import QtCore
 from PySide import QtGui
 import h5py
-import shutil
 import numpy as np
 
 #project specific items
 
 import default
-import cube_loader
 import analysis
 import init_settings
 import generic_thread
@@ -22,21 +21,24 @@ import generic_thread
 
 
 class ConvertToCubeReader():
-    def __init__(self):
+    def __init__(self, filename=None):
         self.convert_mutex = QtCore.QMutex()
         self.progress_mutex = QtCore.QMutex()
         self.threadPool = []
         self.convert_mutex = QtCore.QMutex()
         self.stop_convert = False
-        dialog = QtGui.QFileDialog()
-        dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
-        dialog.setNameFilter('MF1 (*.mf1);; All Files (*.*)')
-        self.filefilter = 'MF1 (*.mf1)'
-        dialog.filterSelected.connect(self.filterSelected)
-        if dialog.exec_():
-            filenames = dialog.selectedFiles()
-        if self.filefilter == 'MF1 (*.mf1)':
-            self.convert_mf1_to_cubereader(filenames)         
+        if filename == None:
+            dialog = QtGui.QFileDialog()
+            dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
+            dialog.setNameFilter('MF1 (*.mf1);; All Files (*.*)')
+            self.filefilter = 'MF1 (*.mf1)'
+            dialog.filterSelected.connect(self.filterSelected)
+            if dialog.exec_():
+                filenames = dialog.selectedFiles()
+            if self.filefilter == 'MF1 (*.mf1)':
+                self.convert_mf1_to_cubereader(filenames)
+        else:
+            self.convert_mf1_to_cubereader(filename)      
                 
     def convert_mf1_to_cubereader(self, filenames):
         for filename in filenames:
@@ -65,16 +67,6 @@ class ConvertToCubeReader():
                                                      global_bool))
                 
                 self.threadPool[len(self.threadPool)-1].start() 
-                
-                
-                #cube_loader.Mf1Converter(filename, 
-                                         #output_filename,
-                                         #dimension1, 
-                                         #dimension2,
-                                         #global_bool,
-                                         #self.progress_bar)
-                
-                #print 'Conversion Completed'
             else:
                 print 'No file selected'
                 
@@ -102,8 +94,8 @@ class ConvertToCubeReader():
             print 'global_bool is', global_bool
         return (dimension1, dimension2, global_bool)
 
-    def filterSelected(self, filter):
-        self.filefilter = filter
+    def filterSelected(self, filter_):
+        self.filefilter = filter_
         
     def convert_progress_bar(self, maximum):
         """
@@ -180,12 +172,7 @@ class ConvertToCubeReader():
         optional info for each graph. not utilized yet. This may also
         be an outdated function for displaying the info.
         """
-        if global_bool:
-            info = graph_array[:,1600:1664]
-        else:
-            info = graph_array[:,3200:3264]
-        info = info.transpose()
-        return info
+        pass
        
     def datasize_finder(self, input_filename, global_bool):
         'finds the data size in the mf1 file'
@@ -270,3 +257,22 @@ class ConvertToCubeReader():
         data_holder.create_group('original_metadata')
         data_holder.create_group('axes')
         data_holder.create_group('attributes')
+
+#main function to start up program
+def main(filename=None):
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+        form = ConvertToCubeReader(filename)
+        app.exec_()
+        return form
+    else:
+        form = ConvertToCubeReader(filename)
+        app.exec_()
+        return form
+
+#if run from commandline then start up by calling main()
+if __name__ == "__main__":
+    main()
+else:
+    app = QtCore.QCoreApplication.instance()

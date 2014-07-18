@@ -70,9 +70,7 @@ class MayaviQWidget(QtGui.QWidget):
         layout = QtGui.QVBoxLayout(self)
 
         self.visualization = Visualization(ycube)
-        button_hide = QtGui.QPushButton('Close Window')
-        button_hide.clicked.connect(self.hide_window)
-        
+
         self.group_checkbox = QtGui.QGroupBox()  
         self.group_checkbox.setTitle("Display Objects")      
         
@@ -96,14 +94,17 @@ class MayaviQWidget(QtGui.QWidget):
 
         self.ui = self.visualization.edit_traits(parent=self,
                                                  kind='subpanel').control
-        layout.addWidget(button_hide)
         layout.addWidget(self.ui)
         layout.addWidget(self.group_checkbox)
         self.ui.setParent(self)
-        
-    def hide_window(self):
+        self.show()
+    
+    def closeEvent(self, event):
+        #try:
         self.visualization.scene.mlab.close()
-        self.hide()
+        #except:
+        #    pass
+        event.accept()
             
     def show_iso(self):
         value = self.checkbox_iso.isChecked()

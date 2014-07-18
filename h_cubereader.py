@@ -4,7 +4,7 @@ Created on Tue Jun 17 11:27:41 2014
 
 @author: jg
 """
-
+import sys
 from PySide import QtGui
 import matplotlib
 matplotlib.rcParams['backend.qt4']='PySide'
@@ -16,53 +16,90 @@ import data_view
 import data_holder
 import spectrum_holder
 import view_data
-import wraith_for_cubereader_2
+import view_fit
+import wraith_for_cubereader
+import convert_file
+import rebin_hdf5
+import visualization
+import file_tools
+
+
+def convert_to_Cubereader(filename=None):
+    return convert_file.main(filename)
 
 def load_data(filename=None):
+    """Loads Cubereader HDF5 file"""
     if filename==None:
-        dialog = QtGui.QFileDialog()
-        dialog.setFileMode(QtGui.QFileDialog.ExistingFile)
-        dialog.setNameFilter('HDF5 (*.hdf5)')
-        if dialog.exec_():
-            filenames = dialog.selectedFiles()
-        for name in filenames:
-            if name:
-                filename = name
-            else:
-                print 'No file selected'
+        filename = file_tools.file_dialog()
     data = data_holder.Data(filename)
     maxval = analysis.find_maxval(data.ycube[...])
     dimensions = analysis.get_dimensions(data.ycube)
     dataview = data_view.DataView(maxval, dimensions)
-    #convert_mutex = QtCore.QMutex()
-    #bool_press = False
     return data, dataview
     
-def load_fit(filename):
-    pass
+def load_fit(filename=None):
+    """Unimplemented"""
+    if filename==None:
+        filename = file_tools.file_dialog()
+    fit_data = data_holder.FitData(filename)
+    fit_dataview = data_view.FitDataView()
+    return fit_data, fit_dataview
 
 def make_spectrum_holder(cube):
     data = cube[0]
     dataview = cube[1]
-    holder = spectrum_holder.main(data.filename, dataview.dimension1,
+    holder = spectrum_holder.SpectrumHolder(data.filename, dataview.dimension1,
                                   dataview.dimension2)
-    #holder = spectrum_holder.SpectrumHolder(data.filename, dataview.dimension1,
-    #                                        dataview.dimension2)  
     return holder
+
+def open_visualization(cube, vmin=None,vmax=None):
+    """opens mayavi window"""
+    data = cube[0]
+    dataview = cube[1]
     
-def open_wraith(cube, spectrum_holder):
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+        
+    data.check_for_ev_cube(data.hdf5)
+    ycube = analysis.mayavi_cube(data, dataview)
+    if ycube == []:
+        print "No ev cube in file. Press Make ev Cube"
+        return
+    if dataview.display_ev:
+        if vmax is not None:
+            dataview.vmin_wavelength = 1240/vmax
+        if vmin is not None:
+            dataview.vmax_wavelength = 1240/vmin
+    else:
+        if vmin is not None:
+            dataview.vmin_wavelength = vmin
+        if vmax is not None:
+            dataview.vmax_wavelength = vmax
+
+    min_slice, max_slice = analysis.mayavi_slices(data, dataview)
+    
+    #order min and max correctly
+    try:
+        ycube_slice = ycube[:,:,min_slice:max_slice]
+    except ValueError:
+        ycube_slice = ycube[:,:,max_slice:min_slice]
+    visualization_window = visualization.MayaviQWidget(ycube_slice)
+    app.exec_()
+    return visualization_window
+       
+def rebin_HDF5(filename=None):
+    return rebin_hdf5.main(filename)
+
+def wraith(cube, spectrum_holder):
     """opens wraith window"""
     data = cube[0]
     dataview = cube[1]
-    wraith_window = wraith_for_cubereader_2.Form(data, dataview, spectrum_holder)
-    wraith_window.show()  
-    return wraith_window
+    return wraith_for_cubereader.main(data, dataview, spectrum_holder)
 
-def view(cube=None):
-
-    return view_data.main(cube)
+def view(cube):
+    if cube[0].name=='Data':
+        return view_data.main(cube)
+    else:
+        return view_fit.main(cube)
     
-
-    
-def view_fit():
-    pass

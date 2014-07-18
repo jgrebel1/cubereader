@@ -7,6 +7,7 @@ Created on Tue Jul 30 15:08:15 2013
 import shutil
 import numpy as np
 import os
+import sys
 from PySide import QtCore
 from PySide import QtGui
 import h5py
@@ -15,7 +16,6 @@ import h5py
 
 import analysis
 import generic_thread
-import data_holder
 
 
 class RebinHDF5(QtGui.QMainWindow):
@@ -25,24 +25,26 @@ class RebinHDF5(QtGui.QMainWindow):
     The program prompts the user for input file, new dimensions and output file
     and then starts the rebinning in a new thread
     """
-    def __init__(self, parent=None):
+    def __init__(self, filename=None, parent=None):
         super(RebinHDF5, self).__init__(parent)
         self.stop_rebin = False
         self.rebin_mutex = QtCore.QMutex()
         self.threadPool = []
-        dialog = QtGui.QFileDialog()
-        dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
-        dialog.setNameFilter('HDF5 (*.hdf5);; All Files (*.*)')
-        self.filefilter = 'HDF5 (*.hdf5)'
-        dialog.filterSelected.connect(self.filterSelected)
-        if dialog.exec_():
-            filenames = dialog.selectedFiles()
-        for filename in filenames:
-            self.rebin_hdf5_process(filename)
+        if filename==None:
+            dialog = QtGui.QFileDialog()
+            dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
+            dialog.setNameFilter('HDF5 (*.hdf5);; All Files (*.*)')
+            self.filefilter = 'HDF5 (*.hdf5)'
+            dialog.filterSelected.connect(self.filterSelected)
+            if dialog.exec_():
+                filenames = dialog.selectedFiles()
+            for filename in filenames:
+                self.rebin_hdf5_process(filename)
+        else:
+            self.rebin_hdf5_process(filename) 
             
-    def filterSelected(self, filter):
-        self.filefilter = filter
-        
+    def filterSelected(self, filter_):
+        self.filefilter = filter_
     def get_dimensions(self, input_file):
         input_hdf5 = h5py.File(input_file, 'r')
         ycube = input_hdf5["Experiments/__unnamed__/data"]
@@ -224,6 +226,19 @@ class RebinWindow(QtGui.QDialog):
         self.show()
         
     def connect_events(self):
-          self.connect(self.okButton, QtCore.SIGNAL('clicked()'),self.accept)
-          self.connect(self.cancelButton, QtCore.SIGNAL('clicked()'), self.reject) 
-            
+        self.connect(self.okButton, QtCore.SIGNAL('clicked()'),self.accept)
+        self.connect(self.cancelButton, QtCore.SIGNAL('clicked()'), self.reject) 
+ 
+ 
+#main function to start up program
+def main(filename=None):
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+        form = RebinHDF5(filename)
+        app.exec_()
+        return form
+    else:
+        form = RebinHDF5(filename)
+        app.exec_()
+        return form            

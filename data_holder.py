@@ -12,6 +12,7 @@ import analysis
 class Data():
     """holds cube data"""
     def __init__(self, hdf5_filename):
+        self.name = 'Data'
         self.filename = hdf5_filename
         self.xdata = []
         self.ycube = []
@@ -56,6 +57,7 @@ class Data():
 class FitData():
     """holds peak_fit data"""
     def __init__(self, hdf5_filename):
+        self.name = 'FitData'
         self.peaks = []        
         self.load_data(hdf5_filename)
 

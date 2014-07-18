@@ -11,6 +11,7 @@ class DataView():
     Holds the current views of the tab
     """
     def __init__(self, maxval, dimensions):
+        self.name = 'DataView'
         self.maxval = maxval
         self.display_ev = True
         self.xcoordinate = 0
@@ -31,6 +32,7 @@ class FitDataView():
     Holds the current views of the Fit tab
     """
     def __init__(self):
+        self.name = 'FitDataView'
         self.current_peak = 'Peak0'
         self.current_variable = 'A'
         self.xcoordinate = 0

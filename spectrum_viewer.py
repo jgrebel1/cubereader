@@ -14,12 +14,13 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 import analysis
 import fit_analysis
 
-class SpectrumViewer(QtGui.QDialog):
+class SpectrumViewer(QtGui.QMainWindow):
     """
     Viewer for Spectrum Holder
     """
-    def __init__(self, spectrum_holder):
-        super(SpectrumViewer, self).__init__()
+    def __init__(self, spectrum_holder, parent=None):
+        #super(SpectrumViewer, self).__init__()
+        QtGui.QMainWindow.__init__(self, parent)
         self.filename = spectrum_holder.filename
         basename = analysis.get_file_basename(spectrum_holder.filename)
         self.setWindowTitle('Spectrum Holder for %s'%basename)
@@ -32,6 +33,7 @@ class SpectrumViewer(QtGui.QDialog):
     
     def inputs(self):
         """populate screen"""
+        self.main_frame = QtGui.QWidget()
         self.table = QtGui.QTableWidget()  
         self.table.setColumnCount(1)
         
@@ -79,7 +81,8 @@ class SpectrumViewer(QtGui.QDialog):
         grid.addLayout(vbox,0,1)
         
         
-        self.setLayout(grid)
+        self.main_frame.setLayout(grid)
+        self.setCentralWidget(self.main_frame)
         
     def cube_warning(self):
         """popup warning when cube is not fitted yet"""
@@ -220,14 +223,14 @@ def main(spectrum_holder):
     if app is None:
         app = QtGui.QApplication(sys.argv)
         form = SpectrumViewer(spectrum_holder)
-        form.hide()
+        form.show()
         app.exec_()
-        return form.data
+        return form
     else:
         form = SpectrumViewer(spectrum_holder)
-        #app.form.show()
+        form.show()
         app.exec_()
-        return form.data
+        return form
 
 #holder function to start up program from interactive terminal
 def holder(filename, dimension1, dimension2):

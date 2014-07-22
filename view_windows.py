@@ -362,12 +362,12 @@ class ViewFit(QtGui.QMainWindow):
     def __init__(self,fit=None,data=None, parent=None):
         #super(CubeFit, self).__init__(parent) 
         QtGui.QMainWindow.__init__(self, parent)
-        if fit==None:
-            filename = file_tools.file_dialog('Please select fit file')
-            fit = file_tools.load_fit(filename)
-        if data == None:
-            filename = file_tools.file_dialog('Please select data file')
-            fit = file_tools.load_fit(filename)
+        #if fit==None:
+        #    filename = file_tools.file_dialog('Please select fit file')
+        #    fit = file_tools.load_fit(filename)
+        #if data == None:
+        #    filename = file_tools.file_dialog('Please select data file')
+        #    fit = file_tools.load_fit(filename)
         self.fit_data = fit[0] 
         self.fit_dataview = fit[1]
         self.cube_data = data[0]
@@ -688,12 +688,12 @@ class ViewFit(QtGui.QMainWindow):
         fit_plot_tools.set_image_from_data(self.img, self.img_axes,
                                   self.fit_data, self.fit_dataview)
         
-#main function to start up program
-def data(cube=None):
+#main function to start up programs
+def data(cube=None, parent = None):
     app = QtGui.QApplication.instance()
     if app is None:
         app = QtGui.QApplication(sys.argv)
-        form = ViewData(cube)
+        form = ViewData(cube, parent)
         form.show()
         app.exec_()
         return form
@@ -702,20 +702,15 @@ def data(cube=None):
         app.exec_()
         return form
     
-def fit(cube=None):
+def fit(fit=None, cube=None):
     app = QtGui.QApplication.instance()
     if app is None:
         app = QtGui.QApplication(sys.argv)
-        form = ViewFit(cube)
+        form = ViewFit(fit, cube)
         form.show()
         app.exec_()
         return form
     else:
-        form = ViewFit(cube)
+        form = ViewFit(fit, cube)
         app.exec_()
         return form
-#if run from commandline then start up by calling main()
-if __name__ == "__main__":
-    main()
-else:
-    app = QtCore.QCoreApplication.instance()

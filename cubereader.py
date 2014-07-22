@@ -84,15 +84,15 @@ class AppForm(QtGui.QMainWindow):
         quit_action = menu_tools.create_action(self, "&Quit", slot=self.close, 
                                          shortcut="Ctrl+Q", 
                                          tip="Close the application")
-        control_action = menu_tools.create_action(self, "&Open Control Panel",
-                                            slot = self.open_control,
-                                            shortcut="Ctrl+P",
-                                            tip="Open the Control Panel")
+        #control_action = menu_tools.create_action(self, "&Open Control Panel",
+        #                                    slot = self.open_control,
+        #                                    shortcut="Ctrl+P",
+        #                                    tip="Open the Control Panel")
         rebin_action = menu_tools.create_action(self, "&Rebin HDF5",
                                                 slot=rebin_hdf5.RebinHDF5)
         menu_tools.add_actions(self, self.file_menu, 
                                (open_action,open_fit_action,
-                                convert_action, control_action,
+                                convert_action,
                                 rebin_action,None, quit_action))
         
         self.help_menu = self.menuBar().addMenu("&Help")

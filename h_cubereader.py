@@ -15,18 +15,18 @@ import analysis
 import data_view
 import data_holder
 import spectrum_holder
-import view_data
-import view_fit
+import view_windows
 import wraith_for_cubereader
 import convert_file
 import rebin_hdf5
 import visualization
 import file_tools
+import spectrum_viewer
 
 
 def convert_to_Cubereader(filename=None):
     return convert_file.main(filename)
-
+    
 def load_data(filename=None):
     """Loads Cubereader HDF5 file"""
     if filename==None:
@@ -97,9 +97,11 @@ def wraith(cube, spectrum_holder):
     dataview = cube[1]
     return wraith_for_cubereader.main(data, dataview, spectrum_holder)
 
-def view(cube):
-    if cube[0].name=='Data':
-        return view_data.main(cube)
-    else:
-        return view_fit.main(cube)
-    
+def view_data(cube):
+    return view_windows.data(cube)
+
+def view_fit(fit, cube):
+    return view_windows.fit(fit, cube)
+
+def view_spectrum_holder(spectrum_holder):
+    return spectrum_viewer.main(spectrum_holder)

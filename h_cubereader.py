@@ -22,7 +22,7 @@ import rebin_hdf5
 import visualization
 import file_tools
 import spectrum_viewer
-
+import normalize_hdf5
 
 def convert_to_Cubereader(filename=None):
     return convert_file.main(filename)
@@ -51,6 +51,9 @@ def make_spectrum_holder(cube):
     holder = spectrum_holder.SpectrumHolder(data.filename, dataview.dimension1,
                                   dataview.dimension2)
     return holder
+
+def normalize(filename):
+    return normalize_hdf5.main(filename)
 
 def open_visualization(cube, vmin=None,vmax=None):
     """opens mayavi window"""

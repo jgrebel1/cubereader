@@ -84,7 +84,7 @@ class NormalizeHDF5(QtGui.QMainWindow):
         (input_rows, input_columns, input_slices) = np.shape(ycube[...])
         self.temp_hdf5 = h5py.File(output_file +'temporary','w')
         self.read_into_temp_hdf5(self.temp_hdf5,
-                                 ycube, input_slices)
+                                 ycube, input_slices, input_rows, input_columns)
         if not self.stop_normalize:
             self.generate_output(input_file, output_file, self.temp_hdf5)
             self.temp_hdf5.close()
@@ -105,12 +105,9 @@ class NormalizeHDF5(QtGui.QMainWindow):
                                              output_filename))
         self.threadPool[len(self.threadPool)-1].start()           
         
-    def normalize(self, a, *args):
-        '''
-        
-        '''
+    def normalize(self, a):
         amax = np.amax(a)
-        new_a = amax
+        new_a = a/float(amax)
         return new_a
         
     def normalize_progress_bar(self, maximum):
@@ -132,14 +129,14 @@ class NormalizeHDF5(QtGui.QMainWindow):
         return progress_bar
         
         
-    def read_into_temp_hdf5(self, temp_hdf5, ycube, rows, columns, slices):
+    def read_into_temp_hdf5(self, temp_hdf5, ycube, slices, rows, columns):
         locker = QtCore.QMutexLocker(self.normalize_mutex)
         temp_cube = temp_hdf5.create_dataset('cube', (rows, columns, slices))
         for input_slice in np.arange(slices):
             if self.stop_normalize:
                 return
             image = ycube[:,:,input_slice]
-            normalizened_image = self.normalize(image, rows, columns)
+            normalizened_image = self.normalize(image)
             temp_cube[:,:,input_slice] = normalizened_image
             self.update_progress(input_slice)  
         self.progress_window.close()

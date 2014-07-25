@@ -144,8 +144,13 @@ class ConvertToCubeReader():
                                              dimension1,dimension2)
 
         if not self.stop_convert:
-            self.generate_output(output_filename, self.temp_hdf5, global_bool,
-                                 header,list_xdata, dimension1, dimension2)
+            self.generate_output(output_filename,
+                                 self.temp_hdf5,
+                                 global_bool,
+                                 header,
+                                 list_xdata,
+                                 dimension1,
+                                 dimension2)
             self.temp_hdf5.close()
             os.remove(output_filename+'temporary')
         self.progress_window.close()            

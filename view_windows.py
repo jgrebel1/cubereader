@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+import pyqtgraph as pg
 
 #project specific items
 
@@ -43,32 +44,36 @@ class ViewData(QtGui.QMainWindow):
         self.main_frame = QtGui.QWidget()
         
         # Figures
-        
-        self.fig = plt.figure(figsize=(16.0, 6.0))
-        self.canvas = FigureCanvas(self.fig)
-        self.canvas.setParent(self.main_frame)            
-        self.img_axes = self.fig.add_subplot(121)
-        self.img = plot_tools.initialize_image(self.img_axes,
-                                               self.data,
-                                               self.dataview)
-        self.marker, = self.img_axes.plot(0,0,'wo')
-        self.cbar = plt.colorbar(self.img)
-        self.set_color_bar_settings()
-        self.graph_axes = self.fig.add_subplot(122)  
-        self.img2 = plot_tools.initialize_graph(self.graph_axes,
-                                                self.data,
-                                                self.dataview)
-        #
+#           
+#         self.fig = plt.figure(figsize=(16.0, 6.0))
+#         self.canvas = FigureCanvas(self.fig)
+#         self.canvas.setParent(self.main_frame)            
+#         self.img_axes = self.fig.add_subplot(121)
+#         self.img = plot_tools.initialize_image(self.img_axes,
+#                                                self.data,
+#                                                self.dataview)
+#         self.marker, = self.img_axes.plot(0,0,'wo')
+#         self.cbar = plt.colorbar(self.img)
+#         self.set_color_bar_settings()
+#         self.graph_axes = self.fig.add_subplot(122)  
+#         self.img2 = plot_tools.initialize_graph(self.graph_axes,
+#                                                 self.data,
+#                                                 self.dataview)
+#         #
+        pg.setConfigOptions(useWeave=False)
+        imv = pg.ImageView()
+        plot_tools.plot_pyqt(imv,self.data, self.dataview)
         # Layout with box sizers
+        
         left_spacer = QtGui.QWidget()
         left_spacer.setSizePolicy(QtGui.QSizePolicy.Expanding,
                                   QtGui.QSizePolicy.Expanding)      
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.set_slider_settings()
+#         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+#         self.set_slider_settings()
 
         # Create the navigation toolbar, tied to the canvas
         #
-        self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
+#         self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
         
         # Control
         
@@ -101,21 +106,24 @@ class ViewData(QtGui.QMainWindow):
         
         # Organization
         
+        
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.canvas)
-        hbox = QtGui.QHBoxLayout()
+#         vbox.addWidget(self.canvas)
+        vbox.addWidget(imv)
+        #hbox = QtGui.QHBoxLayout()
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.mpl_toolbar)       
-        vbox.addWidget(self.canvas)
+#         vbox.addWidget(self.mpl_toolbar)       
+#         vbox.addWidget(self.canvas)
         hbox.addWidget(left_spacer)
-        hbox.addWidget(self.slider)
-        vbox.addLayout(hbox)
+#         hbox.addWidget(self.slider)
+        #vbox.addLayout(hbox)
         vbox.addLayout(grid)
         
         self.main_frame.setLayout(vbox)
+
         self.setCentralWidget(self.main_frame)
-        self.connect_events()
-        self.connect_shortcuts()
+#         self.connect_events()
+#         self.connect_shortcuts()
         self.show()
         
     def change_display(self):

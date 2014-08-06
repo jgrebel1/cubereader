@@ -8,6 +8,10 @@ import matplotlib
 from matplotlib import pyplot as plt
 import analysis
 
+def plot_pyqt(imv, data, dataview):
+    yimage = analysis.yimage_calc(data, dataview)
+    #print type(data.ycube)
+    imv.setImage(yimage)
 
 def change_display(axes, data, dataview):
     """

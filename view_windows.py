@@ -116,7 +116,7 @@ class ViewData(QtGui.QMainWindow):
         self.setCentralWidget(self.main_frame)
         self.connect_events()
         self.connect_shortcuts()
-        self.show()
+        #self.show()
         
     def change_display(self):
         """
@@ -699,6 +699,7 @@ def data(cube=None, parent = None):
         return form
     else:
         form = ViewData(cube)
+        form.show()
         app.exec_()
         return form
     

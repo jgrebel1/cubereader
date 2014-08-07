@@ -22,7 +22,7 @@ import rebin_hdf5
 import visualization
 import file_tools
 import spectrum_viewer
-import transform
+import transform_wrapper
 
 def convert_to_Cubereader(filename=None):
     return convert_file.main(filename)
@@ -45,17 +45,17 @@ def load_fit(filename=None):
     fit_dataview = data_view.FitDataView()
     return fit_data, fit_dataview
 
-def make_spectrum_holder(cube):
+def spec_holder(cube):
     data = cube[0]
     dataview = cube[1]
     holder = spectrum_holder.SpectrumHolder(data.filename, dataview.dimension1,
                                   dataview.dimension2)
     return holder
 
-def transform_data(filename, output_filename=None, action=None,images=True):
-    return transform.main(filename,output_filename, action, images)
+def transform(filename, output_filename=None, action=None,images=True):
+    return transform_wrapper.main(filename,output_filename, action, images)
 
-def open_visualization(cube, vmin=None,vmax=None):
+def show_3d(cube, vmin=None,vmax=None):
     """opens mayavi window"""
     data = cube[0]
     dataview = cube[1]
@@ -106,5 +106,5 @@ def view_data(cube):
 def view_fit(fit, cube):
     return view_windows.fit(fit, cube)
 
-def view_spectrum_holder(spectrum_holder):
+def view_spec_holder(spectrum_holder):
     return spectrum_viewer.main(spectrum_holder)

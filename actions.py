@@ -69,3 +69,17 @@ def fft(a):
     fshift = np.fft.fftshift(f)
     magnitude_spectrum = 20*np.log(np.abs(fshift))
     return magnitude_spectrum
+
+def high_pass(a):
+    percent = .1
+    f = np.fft.fft2(a)
+    fshift = np.fft.fftshift(f)
+    rows, cols = a.shape
+    fshift[:.2*rows,:]=0
+    fshift[-.2*rows:,:]=0
+    #fshift[:percent*cols,:] = 0
+    #fshift[:,-percent*cols:] = 0
+    f_ishift = np.fft.ifftshift(fshift)
+    img_back = np.fft.ifft2(f_ishift)
+    img_back = np.abs(img_back)
+    return img_back

@@ -34,11 +34,13 @@ class HDF5Action(object):
         #                         output_filename,
         #                         action,
         #                         images)
-        self.hdf5_images(filename,
-                                  output_filename,
-                                  action,
-                                  images)
-        
+        self.threadPool = []
+        self.threadPool.append(generic_thread.GenericThread(self.hdf5_images,
+                                                            filename,
+                                                            output_filename,
+                                                            action,
+                                                            images))
+        self.threadPool[len(self.threadPool)-1].start()    
 
     def get_title(self, hdf5):
         g = lambda x: x
@@ -71,11 +73,11 @@ class HDF5Action(object):
                                  action,
                                  images)
         if not self.stop:
-            print 'hello'
             self.generate_output(filename, output_filename, self.temp_hdf5)
             self.temp_hdf5.close()
             os.remove(output_filename +'temporary')
-            self.input_hdf5.close()       
+            self.input_hdf5.close()  
+            self.close()     
     
     def initialize_progress_bar(self, filename, images=True):
         try:

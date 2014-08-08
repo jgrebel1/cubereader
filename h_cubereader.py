@@ -108,3 +108,6 @@ def view_fit(fit, cube):
 
 def view_spec_holder(spectrum_holder):
     return spectrum_viewer.main(spectrum_holder)
+
+def data(cube):
+    return cube[0].ycube

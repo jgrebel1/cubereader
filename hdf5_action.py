@@ -40,7 +40,8 @@ class HDF5Action(object):
                                                             output_filename,
                                                             action,
                                                             images))
-        self.threadPool[len(self.threadPool)-1].start()    
+        self.threadPool[len(self.threadPool)-1].start()
+        
 
     def get_title(self, hdf5):
         g = lambda x: x
@@ -65,7 +66,6 @@ class HDF5Action(object):
         """
         self.stop = False
         ycube = self.get_ycube(filename)
-        print 'self is', self
         print 'output_filename is', output_filename
         self.temp_hdf5 = h5py.File(output_filename +'temporary','w')
         self.read_into_temp_hdf5(self.temp_hdf5,
@@ -112,7 +112,7 @@ class HDF5Action(object):
         
         
     def read_into_temp_hdf5(self, temp_hdf5, ycube, action, images = True):
-        shape = np.shape(ycube[...])
+        shape = self.get_new_shape(ycube, action, images)
         temp_cube = temp_hdf5.create_dataset('cube', shape)
         if images:
             self.iterate_images(ycube, temp_cube, action)
@@ -123,7 +123,17 @@ class HDF5Action(object):
             self.progress_window.close()
         except Exception as e:
             print e
-        
+            
+    def get_new_shape(self,ycube, action, images):
+        rows,columns,specs = ycube.shape
+        if images:
+            test_array = ycube[:,:,0]
+        else:
+            test_array = ycube[0,0,:]            
+        new_array = action(test_array)
+        shape = new_array.shape
+        return new_shape
+
     def iterate_images(self,ycube, temp_cube, action):
         slices = np.shape(ycube)[2]
         for input_slice in np.arange(slices):
@@ -145,8 +155,11 @@ class HDF5Action(object):
                     return
                 spectrum = ycube[row, column,:]
                 new_spectrum = action(spectrum)
-                shape, = np.shape(temp_cube[row,column,:])
-                temp_cube[row,column,:] = new_spectrum[:shape]
+#                 shape, = np.shape(temp_cube[row,column,:])
+                if new_spectrum.shape ==():
+                    temp_cube[row,column] = new_spectrum
+                else:
+                    temp_cube[row,column,:] = new_spectrum #[:shape]
                 try:
                     self.update_progress(column)
                 except Exception as e:

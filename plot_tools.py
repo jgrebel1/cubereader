@@ -27,7 +27,7 @@ def change_display(axes, data, dataview):
 def initialize_graph(axes, data, dataview):
     """
     initializes the graph on screen
-    xcoordinates and ycoordinates start from 0        
+    xs and ys start from 0        
     """
     axes.cla()
     xdata = analysis.xdata_calc(data, dataview)

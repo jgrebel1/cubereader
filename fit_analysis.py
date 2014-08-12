@@ -115,8 +115,8 @@ def spectrum_from_data(peak_list, fit_data, cube_data_view):
     """
     generate list of peaks from fit data.
     """
-    x = cube_data_view.xcoordinate
-    y = cube_data_view.ycoordinate
+    x = cube_data_view.x
+    y = cube_data_view.y
     spectrum = []
     for peak in peak_list:
         peak_holder = fit_data.peaks[peak]

@@ -55,8 +55,8 @@ class ControlRelay(QtCore.QObject):
         x coordinate for the displayed graph
         """
 
-        self.current_tab.dataview.xcoordinate = int(self.window.graphslicex.text())
-        self.current_tab.marker.set_xdata(self.current_tab.dataview.xcoordinate)        
+        self.current_tab.dataview.x = int(self.window.graphslicex.text())
+        self.current_tab.marker.set_xdata(self.current_tab.dataview.x)        
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
                               self.current_tab.data,
@@ -69,8 +69,8 @@ class ControlRelay(QtCore.QObject):
         takes control panel input and changes the current tab's
         y coordinate for the displayed graph
         """
-        self.current_tab.dataview.ycoordinate = int(self.window.graphslicey.text())
-        self.current_tab.marker.set_ydata(self.current_tab.dataview.ycoordinate)        
+        self.current_tab.dataview.y = int(self.window.graphslicey.text())
+        self.current_tab.marker.set_ydata(self.current_tab.dataview.y)        
         plot_tools.plot_graph(self.current_tab.img2,
                               self.current_tab.graph_axes,
                               self.current_tab.data,

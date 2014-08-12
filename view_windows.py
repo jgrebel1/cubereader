@@ -275,8 +275,8 @@ class ViewData(QtGui.QMainWindow):
             self.imageslice.setText('%0.2f'%float(xdata[slice1]))
         else:
             self.imageslice.setText('%0.0f '%float(xdata[slice1]))
-        self.graphslicex.setText('%d'%self.dataview.xcoordinate)
-        self.graphslicey.setText('%d'%self.dataview.ycoordinate)
+        self.graphslicex.setText('%d'%self.dataview.x)
+        self.graphslicey.setText('%d'%self.dataview.y)
         
     def update_graphslicex_from_control(self):
         """
@@ -284,10 +284,10 @@ class ViewData(QtGui.QMainWindow):
         x coordinate for the displayed graph
         """
         try:
-            self.dataview.xcoordinate = int(self.graphslicex.text())
+            self.dataview.x = int(self.graphslicex.text())
         except:
             return
-        self.marker.set_xdata(self.dataview.xcoordinate)
+        self.marker.set_xdata(self.dataview.x)
         try:
             self.update_graph()
         except ValueError:
@@ -301,10 +301,10 @@ class ViewData(QtGui.QMainWindow):
         y coordinate for the displayed graph
         """
         try:
-            self.dataview.ycoordinate = int(self.graphslicey.text())
+            self.dataview.y = int(self.graphslicey.text())
         except:
             return
-        self.marker.set_ydata(self.dataview.ycoordinate)
+        self.marker.set_ydata(self.dataview.y)
         try:
             self.update_graph()
         except ValueError:
@@ -330,8 +330,8 @@ class ViewData(QtGui.QMainWindow):
 
         
     def update_graph(self):
-        self.marker.set_xdata(self.dataview.xcoordinate)
-        self.marker.set_ydata(self.dataview.ycoordinate)        
+        self.marker.set_xdata(self.dataview.x)
+        self.marker.set_ydata(self.dataview.y)        
         plot_tools.plot_graph(self.img2,
                               self.graph_axes, 
                               self.data,
@@ -671,8 +671,8 @@ class ViewFit(QtGui.QMainWindow):
         self.fit_dataview.max_filter = max_filter
 
     def update_graph(self):
-        self.marker.set_xdata(self.cube_dataview.xcoordinate)
-        self.marker.set_ydata(self.cube_dataview.ycoordinate)
+        self.marker.set_xdata(self.cube_dataview.x)
+        self.marker.set_ydata(self.cube_dataview.y)
 
         plot_tools.initialize_graph(self.graph_axes,
                                     self.cube_data,

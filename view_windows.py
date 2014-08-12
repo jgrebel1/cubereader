@@ -5,14 +5,14 @@ Created on Fri Jun 20 14:02:13 2014
 @author: jg
 """
 import sys
-from PySide import QtCore
-from PySide import QtGui
+from PySide import QtCore, QtGui, QtUiTools
 import matplotlib
 from matplotlib import pyplot as plt
 matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 import pyqtgraph as pg
+import numpy as np
 
 #project specific items
 
@@ -39,92 +39,68 @@ class ViewData(QtGui.QMainWindow):
         self.maxval = self.dataview.maxval
         self.bool_press = False
         self.create_main_frame()
+        self.ui.show()
     
     def create_main_frame(self):
-        self.main_frame = QtGui.QWidget()
+                # Load Qt UI from .ui file
+        ui_loader = QtUiTools.QUiLoader()
+        ui_file = QtCore.QFile("view_data.ui")
+        ui_file.open(QtCore.QFile.ReadOnly); 
+        self.ui = ui_loader.load(ui_file)
+        ui_file.close()
         
-        # Figures
-#           
-#         self.fig = plt.figure(figsize=(16.0, 6.0))
-#         self.canvas = FigureCanvas(self.fig)
-#         self.canvas.setParent(self.main_frame)            
-#         self.img_axes = self.fig.add_subplot(121)
-#         self.img = plot_tools.initialize_image(self.img_axes,
-#                                                self.data,
-#                                                self.dataview)
-#         self.marker, = self.img_axes.plot(0,0,'wo')
-#         self.cbar = plt.colorbar(self.img)
-#         self.set_color_bar_settings()
-#         self.graph_axes = self.fig.add_subplot(122)  
-#         self.img2 = plot_tools.initialize_graph(self.graph_axes,
-#                                                 self.data,
-#                                                 self.dataview)
-#         #
+        self.ui.setParent(self)
+#         self.main_frame = QtGui.QWidget()
+        
+        #set up image
         pg.setConfigOptions(useWeave=False)
-        imv = pg.ImageView()
-        plot_tools.plot_pyqt(imv,self.data, self.dataview)
-        # Layout with box sizers
+        self.imv = pg.ImageView()
+        self.vLine_1, self.hLine_1 = self.cross_hair(self.imv)
+        self.imv.setMinimumSize(350, 350)
+        plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
+        self.imv.scene.sigMouseClicked.connect(self.mouseMoved_image)
+        self.imv.getView().setMouseEnabled(x=False, y=False)
         
-        left_spacer = QtGui.QWidget()
-        left_spacer.setSizePolicy(QtGui.QSizePolicy.Expanding,
-                                  QtGui.QSizePolicy.Expanding)      
-#         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-#         self.set_slider_settings()
 
-        # Create the navigation toolbar, tied to the canvas
-        #
-#         self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
+        self.graph = self.setup_graph()
         
-        # Control
+        self.ui.image.addWidget(self.imv)
+        self.ui.graphs.addWidget(self.graph)
         
-        self.imageslicelabel= QtGui.QLabel('Image Slice ev:')        
-        graphslicelabelx = QtGui.QLabel('Graph Slice X Coordinate:')
-        graphslicelabely = QtGui.QLabel('Graph Slice Y Coordinate:')
-        self.wavelength = QtGui.QRadioButton("wavelength", self)
-        self.ev = QtGui.QRadioButton("ev", self)
+        self.set_slider_settings()
 
-        self.imageslice = QtGui.QLineEdit()   
-        self.maxcolor = QtGui.QLineEdit()
-        self.mincolor = QtGui.QLineEdit()
-        self.graphslicex = QtGui.QLineEdit()
-        self.graphslicey = QtGui.QLineEdit()
-        
-        grid = QtGui.QGridLayout()
-        grid.setSpacing(10)
-
-        grid.addWidget(self.imageslicelabel,1,0)
-        grid.addWidget(self.imageslice,1,1)
-  
-        grid.addWidget(graphslicelabelx,1,2)
-        grid.addWidget(self.graphslicex,1,3)
-        
-        grid.addWidget(graphslicelabely,2,2)
-        grid.addWidget(self.graphslicey,2,3)
-        
-        grid.addWidget(self.wavelength,1,4)
-        grid.addWidget(self.ev,2,4)
-        
-        # Organization
-        
-        
-        vbox = QtGui.QVBoxLayout()
-#         vbox.addWidget(self.canvas)
-        vbox.addWidget(imv)
-        #hbox = QtGui.QHBoxLayout()
-        vbox = QtGui.QVBoxLayout()
-#         vbox.addWidget(self.mpl_toolbar)       
-#         vbox.addWidget(self.canvas)
-        hbox.addWidget(left_spacer)
-#         hbox.addWidget(self.slider)
-        #vbox.addLayout(hbox)
-        vbox.addLayout(grid)
-        
-        self.main_frame.setLayout(vbox)
-
-        self.setCentralWidget(self.main_frame)
-#         self.connect_events()
+        self.connect_events()
 #         self.connect_shortcuts()
-        self.show()
+#         self.show()
+        
+    def setup_graph(self):
+        self.win = pg.GraphicsWindow()
+        self.win.setMinimumSize(350, 350)
+        self.graph_label = pg.LabelItem(justify='right')
+        self.win.addItem(self.graph_label, row = 1, col=1)
+        self.p1 = self.win.addPlot(row=2, col=1)
+        self.p2 = self.win.addPlot(row=3, col=1)
+        self.p1.vb.setMouseEnabled(x=False)
+
+        # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this 
+        # item when doing auto-range calculations.
+        self.region = pg.LinearRegionItem()
+        self.region.setZValue(10)
+        self.p2.addItem(self.region, ignoreBounds=True)
+        self.p1.setAutoVisible(y=True)
+        
+        #plot data
+        self.curve1 = self.p1.plot()
+        self.curve2 = self.p2.plot()
+        plot_tools.graph_pyqt(self.curve1, self.curve2, self.data, self.dataview)
+
+        #add line inspection tool
+        self.vLine_2 = pg.InfiniteLine(angle=90, movable=False)
+        self.p1.addItem(self.vLine_2, ignoreBounds=True)
+        self.p1.scene().sigMouseMoved.connect(self.mouseMoved_graph)
+
+        return self.win
+
         
     def change_display(self):
         """
@@ -143,24 +119,18 @@ class ViewData(QtGui.QMainWindow):
 
     def connect_events(self):
         """connect to all the events we need"""
-        self.cidpress = self.img.figure.canvas.mpl_connect(
-            'button_press_event', self.on_press_image)
-        self.cidpress2 = self.img.figure.canvas.mpl_connect(
-            'motion_notify_event', self.on_motion)
-        self.cidpress3 = self.img.figure.canvas.mpl_connect(
-            'button_release_event', self.on_release)
-        self.connect(self.slider, QtCore.SIGNAL('valueChanged(int)'),
+        self.connect(self.ui.slider, QtCore.SIGNAL('valueChanged(int)'),
                      self.update_image_from_slider)
-        self.cidpick = self.canvas.mpl_connect('pick_event',
-                                               self.on_pick_color)
-        self.connect(self.imageslice, QtCore.SIGNAL('editingFinished ()'), 
+        self.connect(self.ui.imageslice, QtCore.SIGNAL('editingFinished ()'), 
                      self.update_imageslice_from_control)
-        self.connect(self.graphslicex, QtCore.SIGNAL('editingFinished ()'), 
+        self.region.sigRegionChanged.connect(self.update_graph_view)
+        self.p1.sigRangeChanged.connect(self.update_region)
+        self.connect(self.ui.graphslicex, QtCore.SIGNAL('editingFinished ()'), 
                      self.update_graphslicex_from_control)
-        self.connect(self.graphslicey, QtCore.SIGNAL('editingFinished ()'), 
+        self.connect(self.ui.graphslicey, QtCore.SIGNAL('editingFinished ()'), 
                      self.update_graphslicey_from_control)
-        self.ev.clicked.connect(self.show_ev)
-        self.wavelength.clicked.connect(self.show_wavelength)
+        self.ui.ev.clicked.connect(self.show_ev)
+        self.ui.wavelength.clicked.connect(self.show_wavelength)
             
     def connect_shortcuts(self):
         self.shortcut_up = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Up")),
@@ -182,92 +152,40 @@ class ViewData(QtGui.QMainWindow):
     def control_panel_update(self):
         self.control.update_current()
         
-    def move_down(self):
-        """move marker down and update graph"""
-        navigation_tools.move_down(self.dataview, self.dataview.dimension1)
-        self.update_graph()
+    def cross_hair(self, plot):
+        vLine = pg.InfiniteLine(angle=90, movable=False)
+        hLine = pg.InfiniteLine(angle=0, movable=False)
+        plot.addItem(vLine, ignoreBounds=True)
+        plot.addItem(hLine, ignoreBounds=True)
+        return vLine, hLine
         
-    
-    def move_left(self):
-        """move marker left and update graph"""
-        navigation_tools.move_left(self.dataview)
-        self.update_graph()
-    
-    def move_right(self):
-        """move marker right and update graph"""
-        navigation_tools.move_right(self.dataview, self.dataview.dimension2)
-        self.update_graph()
-      
-    def move_up(self):
-        """move marker up and update graph"""
-        navigation_tools.move_up(self.dataview)
-        self.update_graph()
-      
-    def on_motion(self, event):        
-        """
-        dragging the marker will change the graph.
-        """
-        if self.bool_press is False: return
-        if event.inaxes != self.img.axes: return
-    
-        navigation_tools.change_coordinates(event, self.dataview)
-        self.update_graph()
-        self.canvas.draw()
+    def mouseMoved_graph(self, evt):
+        pos = evt
+        if self.p1.sceneBoundingRect().contains(pos):
+            mousePoint = self.p1.vb.mapSceneToView(pos)
+            index = int(mousePoint.x())
+            ydata = analysis.ydata_calc(self.data, self.dataview)
+            if index > 0 and index < len(ydata):
+                self.graph_label.setText("<span style='font-size: 12pt'>x=%0.1f,  y1=%0.3f" % (mousePoint.x(), ydata[index]))
+            self.vLine_2.setPos(mousePoint.x())
 
-        
-    def on_pick_color(self, event):
-        """
-        Clicking on the color bar will generate three different actions 
-        depending on location. The upper third sets the max color value,
-        the lower third sets min color value, and the middle pops up a
-        window asking for custom values.
-        """
-        color.on_pick_color_cube(event, self.img, self.data, self.dataview)
-        self.canvas.draw()      
-        
-    def on_press_image(self, event):
-        """
-        This changes the spec graph to theclicked xy coordinate and moves
-        the marker on the image.
-        
-        The .5 addition in the floor function is there to make xdata print 
-        correct coordinates.        
-        """
-        if event.inaxes != self.img.axes: return    
-        contains, attrd = self.img.contains(event)
-    
-        if not contains: return
             
-        navigation_tools.change_coordinates(event, self.dataview)
-        self.bool_press = True
-        self.update_graph()
-
-
-    def on_release(self, event):
-        'on release we reset the press data'
-        self.bool_press = False
-    
-       
-    def reset_colors(self):
-        color.reset_colors_cube(self.img, self.data, self.dataview)           
-                
-    def set_color_bar_settings(self):
-        self.dataview.maxcolor = self.maxval
-        self.dataview.mincolor = 0
-        self.cbar.ax.set_picker(5) 
+    def mouseMoved_image(self, evt):
+        pos = evt.pos()
+        if self.imv.getImageItem().sceneBoundingRect().contains(pos):
+            mousePoint = self.imv.getView().mapSceneToView(pos)
+            self.dataview.x = np.floor(mousePoint.x())
+            self.dataview.y = np.floor(mousePoint.y())
+            self.update_graph()
 
     def set_slider_settings(self):
-        self.slider.setRange(1, self.dataview.number_of_slices)
-        self.slider.setValue(1)
-        self.slider.setTracking(True)
+        self.ui.slider.setRange(1, self.dataview.number_of_slices)
+        self.ui.slider.setValue(1)
+        self.ui.slider.setTracking(True)
 
     def show_ev(self):     
         self.dataview.display_ev = True
         self.change_display()
-        plot_tools.plot_image(self.img,
-                              self.img_axes,
-                              self.data,
-                              self.dataview)
        
     def show_wavelength(self):      
         self.dataview.display_ev = False
@@ -280,11 +198,11 @@ class ViewData(QtGui.QMainWindow):
         xdata = analysis.xdata_calc(self.data, self.dataview) 
         slice1 = self.dataview.slider_val
         if self.dataview.display_ev:
-            self.imageslice.setText('%0.2f'%float(xdata[slice1]))
+            self.ui.imageslice.setText('%0.2f'%float(xdata[slice1]))
         else:
-            self.imageslice.setText('%0.0f '%float(xdata[slice1]))
-        self.graphslicex.setText('%d'%self.dataview.xcoordinate)
-        self.graphslicey.setText('%d'%self.dataview.ycoordinate)
+            self.ui.imageslice.setText('%0.0f '%float(xdata[slice1]))
+        self.ui.graphslicex.setText('%d'%self.dataview.x)
+        self.ui.graphslicey.setText('%d'%self.dataview.y)
         
     def update_graphslicex_from_control(self):
         """
@@ -292,10 +210,10 @@ class ViewData(QtGui.QMainWindow):
         x coordinate for the displayed graph
         """
         try:
-            self.dataview.xcoordinate = int(self.graphslicex.text())
+            self.dataview.x = int(self.ui.graphslicex.text())
         except:
             return
-        self.marker.set_xdata(self.dataview.xcoordinate)
+        self.marker.set_xdata(self.dataview.x)
         try:
             self.update_graph()
         except ValueError:
@@ -309,10 +227,10 @@ class ViewData(QtGui.QMainWindow):
         y coordinate for the displayed graph
         """
         try:
-            self.dataview.ycoordinate = int(self.graphslicey.text())
+            self.dataview.y = int(self.ui.graphslicey.text())
         except:
             return
-        self.marker.set_ydata(self.dataview.ycoordinate)
+        self.marker.set_ydata(self.dataview.y)
         try:
             self.update_graph()
         except ValueError:
@@ -325,26 +243,32 @@ class ViewData(QtGui.QMainWindow):
         of the input
         """
         try:
-            slice_input = float(self.imageslice.text())
-        except:
-            return
+            slice_input = float(self.ui.imageslice.text())
+        except Exception as e:
+            print e
         if self.dataview.display_ev:
             imageval = analysis.ev_to_index(slice_input, self.data) 
-            self.slider.setValue(imageval) 
+            self.ui.slider.setValue(imageval) 
         else:      
             imageval = analysis.wavelength_to_index(slice_input, self.data)
-            self.slider.setValue(self.dataview.number_of_slices - 1-imageval) 
-        self.update_graph()
-
+            self.ui.slider.setValue(self.dataview.number_of_slices - 1-imageval) 
+#         self.update_graph()
+        plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
         
     def update_graph(self):
-        self.marker.set_xdata(self.dataview.xcoordinate)
-        self.marker.set_ydata(self.dataview.ycoordinate)        
-        plot_tools.plot_graph(self.img2,
-                              self.graph_axes, 
-                              self.data,
-                              self.dataview)
+        self.vLine_1.setPos(self.dataview.x+.5)
+        self.hLine_1.setPos(self.dataview.y+.5)
+        plot_tools.graph_pyqt(self.curve1, self.curve2, self.data, self.dataview)
         self.update_control()
+        
+    def update_graph_view(self):
+        self.region.setZValue(10)
+        minX, maxX = self.region.getRegion()
+        self.p1.setXRange(minX, maxX, padding=0)    
+    
+    def update_region(self, window, viewRange):
+        rgn = viewRange[0]
+        self.region.setRegion(rgn)       
                               
     def update_image_from_slider(self, sliderval):
         
@@ -352,10 +276,11 @@ class ViewData(QtGui.QMainWindow):
             self.dataview.slider_val = sliderval-1
         else:
             self.dataview.slider_val = self.dataview.number_of_slices - sliderval           
-        plot_tools.plot_image(self.img,
-                              self.img_axes,
-                              self.data,
-                              self.dataview)
+#         plot_tools.plot_image(self.img,
+#                               self.img_axes,
+#                               self.data,
+#                               self.dataview)
+        plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
         self.update_control()
 
     def update_label(self):
@@ -679,16 +604,15 @@ class ViewFit(QtGui.QMainWindow):
         self.fit_dataview.max_filter = max_filter
 
     def update_graph(self):
-        self.marker.set_xdata(self.cube_dataview.xcoordinate)
-        self.marker.set_ydata(self.cube_dataview.ycoordinate)
+        self.marker.set_xdata(self.cube_dataview.x)
+        self.marker.set_ydata(self.cube_dataview.y)
 
         plot_tools.initialize_graph(self.graph_axes,
                                     self.cube_data,
                                     self.cube_dataview)
         self.spectrum.clear_peaks()
         self.load_peaks()        
-        self.plot_peaks()                            
-
+        self.plot_peaks()                  
         
     def variable_changed(self, index):
         """changing variable updates image"""

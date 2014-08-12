@@ -14,8 +14,8 @@ class DataView():
         self.name = 'DataView'
         self.maxval = maxval
         self.display_ev = True
-        self.xcoordinate = 0
-        self.ycoordinate = 0
+        self.x = 0
+        self.y = 0
         self.maxcolor = maxval
         self.mincolor = 0
         self.dimension1 = dimensions[0]
@@ -35,8 +35,8 @@ class FitDataView():
         self.name = 'FitDataView'
         self.current_peak = 'Peak0'
         self.current_variable = 'A'
-        self.xcoordinate = 0
-        self.ycoordinate = 0
+        self.x = 0
+        self.y = 0
         self.maxcolor = 100
         self.mincolor = 0
         self.min_filter = -1

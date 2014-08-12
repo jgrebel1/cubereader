@@ -62,8 +62,8 @@ class Form(QMainWindow):
         self.xdata = np.float64(self.xdata)
         self.data = data
         self.ydata = module_copy.copy(analysis.ydata_calc(data, data_view))
-        self.xcoordinate = module_copy.copy(data_view.xcoordinate)
-        self.ycoordinate = module_copy.copy(data_view.ycoordinate)
+        self.x = module_copy.copy(data_view.x)
+        self.y = module_copy.copy(data_view.y)
         self.spectrum_holder = spectrum_holder
         self.spectrum_viewer = spectrum_viewer.SpectrumViewer(spectrum_holder)
         self.display_ev = copy(data_view.display_ev)
@@ -105,7 +105,7 @@ class Form(QMainWindow):
           #if filename:
             #file = os.path.basename(str(filename))
         self.files[self.filename] = DataHolder()
-        self.files[self.filename].load_from_mf1_cube(self.xdata, self.ydata, self.xcoordinate, self.ycoordinate)
+        self.files[self.filename].load_from_mf1_cube(self.xdata, self.ydata, self.x, self.y)
         self.fill_series_list()
         self.update_ui()
 

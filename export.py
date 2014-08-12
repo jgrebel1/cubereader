@@ -13,7 +13,7 @@ def export_spectrum(filename, data, data_view):
     """
     export the current spectrum to an excel file in the original file's folder
     """
-    location = 'x' + str(data_view.xcoordinate) + 'y' + str(data_view.ycoordinate)
+    location = 'x' + str(data_view.x) + 'y' + str(data_view.y)
     no_ext_filename, ext = os.path.splitext(filename)
     out_filename = no_ext_filename + location + '.csv'
     xdata = analysis.xdata_calc(data,data_view)

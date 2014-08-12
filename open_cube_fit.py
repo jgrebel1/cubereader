@@ -353,8 +353,8 @@ class CubeFit(QtGui.QMainWindow):
         self.fit_dataview.max_filter = max_filter
 
     def update_graph(self):
-        self.marker.set_xdata(self.cube_dataview.xcoordinate)
-        self.marker.set_ydata(self.cube_dataview.ycoordinate)
+        self.marker.set_xdata(self.cube_dataview.x)
+        self.marker.set_ydata(self.cube_dataview.y)
 
         plot_tools.initialize_graph(self.graph_axes,
                                     self.cube_data,

@@ -6,13 +6,20 @@ Created on Fri Jul 12 19:44:34 2013
 """
 import matplotlib
 from matplotlib import pyplot as plt
+import numpy as np
 import analysis
 
 def plot_pyqt(imv, data, dataview):
     yimage = analysis.yimage_calc(data, dataview)
-    #print type(data.ycube)
+    yimage = np.rot90(yimage, 1)
     imv.setImage(yimage)
-
+    
+def graph_pyqt(curve1, curve2, data, dataview):
+    xdata = analysis.xdata_calc(data, dataview)
+    ydata = analysis.ydata_calc(data, dataview)    
+    curve1.setData(ydata, pen="w")
+    curve2.setData(ydata, pen="w")
+    
 def change_display(axes, data, dataview):
     """
     changes the view between ev and wavelength for ev and wavelength data

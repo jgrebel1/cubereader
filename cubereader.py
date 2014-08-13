@@ -37,7 +37,7 @@ class AppForm(object):
         """populate screen"""
         # Load Qt UI from .ui file
         ui_loader = QtUiTools.QUiLoader()
-        ui_file = QtCore.QFile("main.ui")
+        ui_file = QtCore.QFile("cubereader.ui")
         ui_file.open(QtCore.QFile.ReadOnly); 
         self.ui = ui_loader.load(ui_file)
         ui_file.close()

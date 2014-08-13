@@ -9,7 +9,7 @@ Gui Demo for some of the structure.
 #from pyface.qt import QtGui, QtCore
 
 import matplotlib
-from PySide import QtGui
+from PySide import QtCore, QtGui, QtUiTools
 matplotlib.rcParams['backend.qt4']='PySide'
 #project specific items
 
@@ -24,47 +24,52 @@ import rebin_hdf5
 import open_cube_fit
 
 
-class AppForm(QtGui.QMainWindow):
+class AppForm(object):
     """Gui Application to display Data Cube"""
     def __init__(self, parent=None):
-        QtGui.QMainWindow.__init__(self, parent)
-        self.setWindowTitle('Cube Reader')
-        self.create_menu()
         self.create_main_window()
-        #self.create_status_bar()
+        self.connect_buttons()
+        
+        
+#         self.create_main_window()
         
     def create_main_window(self):
         """populate screen"""
-        self.main_window = QtGui.QWidget()
-        self.tab = QtGui.QTabWidget()
-        self.tab.setTabsClosable(True)
-        self.tab.tabCloseRequested.connect(self.close_tab)
-        layout = QtGui.QHBoxLayout()
-        layout.addWidget(self.tab)
+        # Load Qt UI from .ui file
+        ui_loader = QtUiTools.QUiLoader()
+        ui_file = QtCore.QFile("main.ui")
+        ui_file.open(QtCore.QFile.ReadOnly); 
+        self.ui = ui_loader.load(ui_file)
+        ui_file.close()
+        
+        self.ui.tabWidget.setTabsClosable(True)
+        self.ui.tabWidget.tabCloseRequested.connect(self.close_tab)
 
-        self.main_window.setLayout(layout)
-        self.setCentralWidget(self.main_window)
-        self.resize(971,600)  
         
     def close_tab(self):
         """closes hdf5 files before closing tab"""
         try:
-            if self.tab.currentWidget().data.hdf5:
-                self.tab.currentWidget().data.hdf5.close()
+            if self.ui.tabWidget.currentWidget().data.hdf5:
+                self.ui.tabWidget.currentWidget().data.hdf5.close()
         except:
             pass
         try:
-            if self.tab.currentWidget().cube_data.hdf5:
-                self.tab.currentWidget().cube_data.hdf5.close()
-            if self.tab.currentWidget().fit_data.hdf5:
-                self.tab.currentWidget().cube_data.hdf5.close()
+            if self.ui.tabWidget.currentWidget().cube_data.hdf5:
+                self.ui.tabWidget.currentWidget().cube_data.hdf5.close()
+            if self.ui.tabWidget.currentWidget().fit_data.hdf5:
+                self.ui.tabWidget.currentWidget().cube_data.hdf5.close()
         except:
             pass
-        self.tab.removeTab(self.tab.currentIndex())             
+        self.ui.tabWidget.removeTab(self.ui.tabWidget.currentIndex())             
         
     def control_panel_update(self):
         self.control.update_current()
-    
+        
+    def connect_buttons(self):
+        self.ui.button_open_file.clicked.connect(self.open_file)
+        self.ui.button_open_fit.clicked.connect(self.open_fit)
+        self.ui.button_convert_mf1.clicked.connect(convert_file.ConvertToCubeReader)
+        self.ui.button_rebin_file.clicked.connect(rebin_hdf5.RebinHDF5)
 
 
     def create_menu(self):
@@ -113,13 +118,13 @@ class AppForm(QtGui.QMainWindow):
         opens control panel. The control panel always affects the currently
         selected tab.
         """
-        self.control = control_relay.ControlRelay(self.tab)
-        self.tab.currentChanged.connect(self.control_panel_update)
+        self.control = control_relay.ControlRelay(self.ui.tabWidget)
+        self.ui.tabWidget.currentChanged.connect(self.control_panel_update)
     
 
     def open_file(self):
         """opens a file in a new tab"""
-        dialog = QtGui.QFileDialog(self)
+        dialog = QtGui.QFileDialog(self.ui)
         dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
         dialog.setNameFilter('HDF5 (*.hdf5)')
         if dialog.exec_():
@@ -129,13 +134,13 @@ class AppForm(QtGui.QMainWindow):
                 basename = analysis.get_file_basename(filename)   
                 newtab = tab.Tab(filename)         
                 newtab.setWindowTitle('%s' %basename)
-                self.tab.addTab(newtab, '%s' %basename)
+                self.ui.tabWidget.addTab(newtab, '%s' %basename)
             else:
                 print 'No file selected'
                 
     def open_fit(self):
         """opens a cube fit in a new tab"""
-        dialog = QtGui.QFileDialog(self)
+        dialog = QtGui.QFileDialog(self.ui)
         dialog.setFileMode(QtGui.QFileDialog.ExistingFiles)
         dialog.setNameFilter('HDF5 (*.hdf5)')
         if dialog.exec_():
@@ -145,9 +150,12 @@ class AppForm(QtGui.QMainWindow):
                 basename = analysis.get_file_basename(filename)   
                 newtab = open_cube_fit.CubeFit(filename)         
                 newtab.setWindowTitle('%s' %basename)
-                self.tab.addTab(newtab, '%s' %basename)
+                self.ui.tabWidget.addTab(newtab, '%s' %basename)
             else:
                 print 'No file selected'
+                
+    def show(self):
+        self.ui.show()
                                                                           
 
 def main():

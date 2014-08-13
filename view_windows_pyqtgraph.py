@@ -39,7 +39,6 @@ class ViewData(QtGui.QMainWindow):
         self.maxval = self.dataview.maxval
         self.bool_press = False
         self.create_main_frame()
-        self.ui.show()
     
     def create_main_frame(self):
                 # Load Qt UI from .ui file
@@ -182,6 +181,9 @@ class ViewData(QtGui.QMainWindow):
         self.ui.slider.setRange(1, self.dataview.number_of_slices)
         self.ui.slider.setValue(1)
         self.ui.slider.setTracking(True)
+        
+    def show(self):
+        self.ui.show()
 
     def show_ev(self):     
         self.dataview.display_ev = True
@@ -631,6 +633,7 @@ def data(cube=None, parent = None):
         return form
     else:
         form = ViewData(cube)
+        form.show()
         app.exec_()
         return form
     

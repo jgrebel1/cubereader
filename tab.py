@@ -79,11 +79,14 @@ class Tab(QtGui.QWidget):
         self.vbox.addWidget(self.ui)
         self.setLayout(self.vbox)
         
-        self.view = view_windows_pyqtgraph.ViewData(self.cube)
+        self.view = view_windows.ViewData(self.cube)
         
         self.initialize_vbox(self.ui.label_min, self.ui.label_max,
                                self.ui.edit_min, self.ui.edit_max)
-        self.ui.view.addWidget(self.view.ui)
+        try:
+            self.ui.view.addWidget(self.view.ui)
+        except AttributeError:
+            self.ui.view.addWidget(self.view)
 
 
     def change_display(self):

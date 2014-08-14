@@ -40,6 +40,7 @@ import convert_to_ev
 import navigation_tools
 import h_cubereader
 import view_windows
+import view_windows_pyqtgraph
 
 plt.ioff()
             
@@ -58,6 +59,9 @@ class Tab(QtGui.QWidget):
         self.make_spectrum_holder()
         self.make_frame()
         self.connect_buttons()
+#         self.view.show()
+#         self.show()
+        
  
     
     def make_frame(self):
@@ -71,11 +75,15 @@ class Tab(QtGui.QWidget):
         ui_file.close()
         self.ui.setParent(self)
         
-        self.view = view_windows.ViewData(self.cube)
+        self.vbox = QtGui.QVBoxLayout()
+        self.vbox.addWidget(self.ui)
+        self.setLayout(self.vbox)
+        
+        self.view = view_windows_pyqtgraph.ViewData(self.cube)
         
         self.initialize_vbox(self.ui.label_min, self.ui.label_max,
                                self.ui.edit_min, self.ui.edit_max)
-        self.ui.view.addWidget(self.view)
+        self.ui.view.addWidget(self.view.ui)
 
 
     def change_display(self):

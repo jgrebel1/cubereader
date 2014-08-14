@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>796</width>
+    <height>418</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,6 +15,62 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
+    <item row="5" column="1">
+     <widget class="QGroupBox" name="groupBox">
+      <property name="maximumSize">
+       <size>
+        <width>101</width>
+        <height>151</height>
+       </size>
+      </property>
+      <property name="title">
+       <string>Mayavi</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="edit_min"/>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QPushButton" name="button_mayavi">
+         <property name="text">
+          <string>Open Mayavi</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_min">
+         <property name="text">
+          <string>Min:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_max">
+         <property name="text">
+          <string>Max</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="edit_max"/>
+       </item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QPushButton" name="button_make_ev_cube">
+         <property name="text">
+          <string>Make ev Cube</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="2" rowspan="6">
+     <layout class="QVBoxLayout" name="view">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
+     </layout>
+    </item>
     <item row="3" column="1">
      <widget class="QPushButton" name="button_export_cube">
       <property name="maximumSize">
@@ -67,58 +123,6 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="2" rowspan="6">
-     <layout class="QVBoxLayout" name="view"/>
-    </item>
-    <item row="5" column="1">
-     <widget class="QGroupBox" name="groupBox">
-      <property name="maximumSize">
-       <size>
-        <width>101</width>
-        <height>151</height>
-       </size>
-      </property>
-      <property name="title">
-       <string>GroupBox</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="edit_min"/>
-       </item>
-       <item row="1" column="0" colspan="2">
-        <widget class="QPushButton" name="button_mayavi">
-         <property name="text">
-          <string>Open Mayavi</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_min">
-         <property name="text">
-          <string>Min:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="label_max">
-         <property name="text">
-          <string>Max</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLineEdit" name="edit_max"/>
-       </item>
-       <item row="4" column="0" colspan="2">
-        <widget class="QPushButton" name="button_make_ev_cube">
-         <property name="text">
-          <string>Make ev Cube</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -126,7 +130,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>796</width>
      <height>21</height>
     </rect>
    </property>

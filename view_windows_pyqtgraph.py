@@ -39,6 +39,7 @@ class ViewData(QtGui.QMainWindow):
         self.maxval = self.dataview.maxval
         self.bool_press = False
         self.create_main_frame()
+        self.sizeHint()
     
     def create_main_frame(self):
                 # Load Qt UI from .ui file
@@ -49,14 +50,16 @@ class ViewData(QtGui.QMainWindow):
         ui_file.close()
         
         self.ui.setParent(self)
-#         self.main_frame = QtGui.QWidget()
+
         
         #set up image
         pg.setConfigOptions(useWeave=False)
         self.imv = pg.ImageView()
         self.vLine_1, self.hLine_1 = self.cross_hair(self.imv)
+#         self.dot = self.make_dot(self.imv)
+        
         self.imv.setMinimumSize(350, 350)
-        plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
+        plot_tools.plot_pyqt(self.imv,self.data , self.dataview)
         self.imv.scene.sigMouseClicked.connect(self.mouseMoved_image)
         self.imv.getView().setMouseEnabled(x=False, y=False)
         
@@ -152,11 +155,20 @@ class ViewData(QtGui.QMainWindow):
         self.control.update_current()
         
     def cross_hair(self, plot):
-        vLine = pg.InfiniteLine(angle=90, movable=False)
-        hLine = pg.InfiniteLine(angle=0, movable=False)
-        plot.addItem(vLine, ignoreBounds=True)
-        plot.addItem(hLine, ignoreBounds=True)
+        vLine = pg.InfiniteLine(angle=90, movable=True)
+        hLine = pg.InfiniteLine(angle=0, movable=True)
+        plot.addItem(vLine)#, ignoreBounds=True)
+        plot.addItem(hLine)#, ignoreBounds=True)
         return vLine, hLine
+    
+    def make_dot(self, plot):
+        
+        x = self.dataview.x + .5
+        y = self.dataview.y + .5
+        dot ={'pos': (x, y)}#, 'size': 1e-6, 'pen': {'color': 'w', 'width': 2}, 'brush':pg.intColor(i*10+j, 100)})
+        plot.addPoints(dot)
+
+        return dot
         
     def mouseMoved_graph(self, evt):
         pos = evt
@@ -176,7 +188,28 @@ class ViewData(QtGui.QMainWindow):
             self.dataview.x = np.floor(mousePoint.x())
             self.dataview.y = np.floor(mousePoint.y())
             self.update_graph()
-
+            
+    def move_down(self):
+        """move marker down and update graph"""
+        navigation_tools.move_down(self.dataview, self.dataview.dimension1)
+        self.update_graph()
+        
+    
+    def move_left(self):
+        """move marker left and update graph"""
+        navigation_tools.move_left(self.dataview)
+        self.update_graph()
+    
+    def move_right(self):
+        """move marker right and update graph"""
+        navigation_tools.move_right(self.dataview, self.dataview.dimension2)
+        self.update_graph()
+      
+    def move_up(self):
+        """move marker up and update graph"""
+        navigation_tools.move_up(self.dataview)
+        self.update_graph()
+        
     def set_slider_settings(self):
         self.ui.slider.setRange(1, self.dataview.number_of_slices)
         self.ui.slider.setValue(1)
@@ -258,8 +291,10 @@ class ViewData(QtGui.QMainWindow):
         plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
         
     def update_graph(self):
-        self.vLine_1.setPos(self.dataview.x+.5)
-        self.hLine_1.setPos(self.dataview.y+.5)
+        x = self.dataview.x+.5
+        y = self.dataview.y+.5
+        self.vLine_1.setPos(x)
+        self.hLine_1.setPos(y)
         plot_tools.graph_pyqt(self.curve1, self.curve2, self.data, self.dataview)
         self.update_control()
         

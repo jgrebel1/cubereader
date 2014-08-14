@@ -17,8 +17,8 @@ def plot_pyqt(imv, data, dataview):
 def graph_pyqt(curve1, curve2, data, dataview):
     xdata = analysis.xdata_calc(data, dataview)
     ydata = analysis.ydata_calc(data, dataview)    
-    curve1.setData(ydata, pen="w")
-    curve2.setData(ydata, pen="w")
+    curve1.setData(xdata,ydata, pen="w")
+    curve2.setData(xdata,ydata, pen="w")
     
 def change_display(axes, data, dataview):
     """

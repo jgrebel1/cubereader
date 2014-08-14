@@ -55,8 +55,8 @@ class ViewData(QtGui.QMainWindow):
         #set up image
         pg.setConfigOptions(useWeave=False)
         self.imv = pg.ImageView()
-        self.vLine_1, self.hLine_1 = self.cross_hair(self.imv)
-#         self.dot = self.make_dot(self.imv)
+#         self.vLine_1, self.hLine_1 = self.cross_hair(self.imv)
+        self.dot = self.make_dot(self.imv)
         
         self.imv.setMinimumSize(350, 350)
         plot_tools.plot_pyqt(self.imv,self.data , self.dataview)
@@ -165,8 +165,8 @@ class ViewData(QtGui.QMainWindow):
         
         x = self.dataview.x + .5
         y = self.dataview.y + .5
-        dot ={'pos': (x, y)}#, 'size': 1e-6, 'pen': {'color': 'w', 'width': 2}, 'brush':pg.intColor(i*10+j, 100)})
-        plot.addPoints(dot)
+        dot = pg.CircleROI(pos=(x,y),size=(5,5) )
+        plot.addItem(dot)
 
         return dot
         
@@ -293,8 +293,9 @@ class ViewData(QtGui.QMainWindow):
     def update_graph(self):
         x = self.dataview.x+.5
         y = self.dataview.y+.5
-        self.vLine_1.setPos(x)
-        self.hLine_1.setPos(y)
+#         self.vLine_1.setPos(x)
+#         self.hLine_1.setPos(y)
+        self.dot.setPos((x,y))
         plot_tools.graph_pyqt(self.curve1, self.curve2, self.data, self.dataview)
         self.update_control()
         

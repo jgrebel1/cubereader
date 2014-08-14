@@ -45,6 +45,7 @@ class AppForm(object):
         
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.close_tab)
+        self.ui.tabWidget.isMovable()
 
         
     def close_tab(self):
@@ -135,7 +136,7 @@ class AppForm(object):
                 basename = analysis.get_file_basename(filename)   
                 newtab = tab.Tab(filename)         
                 newtab.setWindowTitle('%s' %basename)
-                self.ui.tabWidget.addTab(newtab, '%s' %basename)
+                self.ui.tabWidget.addTab(newtab.ui, '%s' %basename)
             else:
                 print 'No file selected'
                 

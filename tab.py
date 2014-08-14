@@ -18,8 +18,7 @@ import numpy as np
 from numpy import array
 import matplotlib
 from matplotlib import pyplot as plt
-from PySide import QtCore
-from PySide import QtGui
+from PySide import QtCore, QtGui, QtUiTools
 matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
@@ -47,7 +46,7 @@ plt.ioff()
 class Tab(QtGui.QWidget):
 
     def __init__(self,filename, parent=None):
-        super(Tab, self).__init__(parent)      
+        QtGui.QWidget.__init__(self, parent)   
         self.filename = filename
         print self.filename
         self.cube = h_cubereader.load_data(filename)
@@ -58,78 +57,92 @@ class Tab(QtGui.QWidget):
         self.bool_press = False
         self.make_spectrum_holder()
         self.make_frame()
+        self.connect_buttons()
  
     
     def make_frame(self):
         """populate screen"""
-        #
+        
         # Layout 
+        ui_loader = QtUiTools.QUiLoader()
+        ui_file = QtCore.QFile("tab.ui")
+        ui_file.open(QtCore.QFile.ReadOnly); 
+        self.ui = ui_loader.load(ui_file)
+        ui_file.close()
+        self.ui.setParent(self)
+
+        
+        
         self.view = view_windows.data(self.cube)
+        
+        self.initialize_vbox(self.ui.label_min, self.ui.label_max,
+                               self.ui.edit_min, self.ui.edit_max)
+        self.ui.view.addWidget(self.view)
 
-        self.button_display_header = QtGui.QPushButton('Display Header')
-        self.button_display_header.setSizePolicy(QtGui.QSizePolicy.Fixed, 
-                                               QtGui.QSizePolicy.Fixed)
-        self.button_display_header.clicked.connect(self.display_header)
-        
-        self.button_export_spectrum = QtGui.QPushButton('Export Spectrum')
-        self.button_export_spectrum.setSizePolicy(QtGui.QSizePolicy.Fixed, 
-                                               QtGui.QSizePolicy.Fixed)
-        self.button_export_spectrum.clicked.connect(self.export_spectrum)
-        
-        self.button_export_cube = QtGui.QPushButton('Export Cube')
-        self.button_export_cube.setSizePolicy(QtGui.QSizePolicy.Fixed, 
-                                               QtGui.QSizePolicy.Fixed)
-        self.button_export_cube.clicked.connect(self.export_cube)
-        
-        self.button_wraith = QtGui.QPushButton('Open Wraith for Current Graph')
-        self.button_wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
-                                  QtGui.QSizePolicy.Fixed)
-        self.button_wraith.clicked.connect(self.open_wraith)
-        
-        self.button_visualization = QtGui.QPushButton('Open Visualization')
-        self.button_visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
-                                         QtGui.QSizePolicy.Fixed)
-        self.button_visualization.clicked.connect(self.open_visualization)
-        
-        self.button_make_ev_cube = QtGui.QPushButton('Make ev Cube')
-        self.button_make_ev_cube.setSizePolicy(QtGui.QSizePolicy.Fixed,
-                                         QtGui.QSizePolicy.Fixed)
-        self.button_make_ev_cube.clicked.connect(self.make_ev_cube)
-                     
-        self.label_vmin_slice = QtGui.QLabel()  
-        self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
-        self.connect(self.textbox_vmin_slice, 
-                     QtCore.SIGNAL('editingFinished ()'), 
-                     self.update_visualization_settings)
-          
-                     
-        self.label_vmax_slice = QtGui.QLabel()
-        self.textbox_vmax_slice = QtGui.QLineEdit(str(self.data.xdata[-1]))
-        self.connect(self.textbox_vmax_slice, 
-                     QtCore.SIGNAL('editingFinished ()'), 
-                     self.update_visualization_settings)
-        
-        self.initialize_vbox(self.label_vmin_slice, self.label_vmax_slice,
-                               self.textbox_vmin_slice, self.textbox_vmax_slice)
-        
-        vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.view)
-        vbox.addWidget(self.button_display_header)
-        vbox.addWidget(self.button_export_spectrum)
-        vbox.addWidget(self.button_export_cube)
-        vbox.addWidget(self.button_wraith)
-        hbox_visualization = QtGui.QHBoxLayout()
-        hbox_visualization.addStretch(1)
-        hbox_visualization.setDirection(QtGui.QBoxLayout.LeftToRight)
-        hbox_visualization.addWidget(self.button_visualization)
-        hbox_visualization.addWidget(self.button_make_ev_cube)
-        hbox_visualization.addWidget(self.label_vmin_slice)
-        hbox_visualization.addWidget(self.textbox_vmin_slice)
-        hbox_visualization.addWidget(self.label_vmax_slice)
-        hbox_visualization.addWidget(self.textbox_vmax_slice)
-        vbox.addLayout(hbox_visualization)
-
-        self.setLayout(vbox)
+#         self.button_display_header = QtGui.QPushButton('Display Header')
+#         self.button_display_header.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+#                                                QtGui.QSizePolicy.Fixed)
+#         self.button_display_header.clicked.connect(self.display_header)
+#         
+#         self.button_export_spectrum = QtGui.QPushButton('Export Spectrum')
+#         self.button_export_spectrum.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+#                                                QtGui.QSizePolicy.Fixed)
+#         self.button_export_spectrum.clicked.connect(self.export_spectrum)
+#         
+#         self.button_export_cube = QtGui.QPushButton('Export Cube')
+#         self.button_export_cube.setSizePolicy(QtGui.QSizePolicy.Fixed, 
+#                                                QtGui.QSizePolicy.Fixed)
+#         self.button_export_cube.clicked.connect(self.export_cube)
+#         
+#         self.button_wraith = QtGui.QPushButton('Open Wraith for Current Graph')
+#         self.button_wraith.setSizePolicy(QtGui.QSizePolicy.Fixed,
+#                                   QtGui.QSizePolicy.Fixed)
+#         self.button_wraith.clicked.connect(self.open_wraith)
+#         
+#         self.button_visualization = QtGui.QPushButton('Open Visualization')
+#         self.button_visualization.setSizePolicy(QtGui.QSizePolicy.Fixed,
+#                                          QtGui.QSizePolicy.Fixed)
+#         self.button_visualization.clicked.connect(self.open_visualization)
+#         
+#         self.button_make_ev_cube = QtGui.QPushButton('Make ev Cube')
+#         self.button_make_ev_cube.setSizePolicy(QtGui.QSizePolicy.Fixed,
+#                                          QtGui.QSizePolicy.Fixed)
+#         self.button_make_ev_cube.clicked.connect(self.make_ev_cube)
+#                      
+#         self.label_vmin_slice = QtGui.QLabel()  
+#         self.textbox_vmin_slice = QtGui.QLineEdit(str(self.data.xdata[0]))
+#         self.connect(self.textbox_vmin_slice, 
+#                      QtCore.SIGNAL('editingFinished ()'), 
+#                      self.update_visualization_settings)
+#           
+#                      
+#         self.label_vmax_slice = QtGui.QLabel()
+#         self.textbox_vmax_slice = QtGui.QLineEdit(str(self.data.xdata[-1]))
+#         self.connect(self.textbox_vmax_slice, 
+#                      QtCore.SIGNAL('editingFinished ()'), 
+#                      self.update_visualization_settings)
+#         
+#         self.initialize_vbox(self.label_vmin_slice, self.label_vmax_slice,
+#                                self.textbox_vmin_slice, self.textbox_vmax_slice)
+#         
+#         vbox = QtGui.QVBoxLayout()
+#         vbox.addWidget(self.view)
+#         vbox.addWidget(self.button_display_header)
+#         vbox.addWidget(self.button_export_spectrum)
+#         vbox.addWidget(self.button_export_cube)
+#         vbox.addWidget(self.button_wraith)
+#         hbox_visualization = QtGui.QHBoxLayout()
+#         hbox_visualization.addStretch(1)
+#         hbox_visualization.setDirection(QtGui.QBoxLayout.LeftToRight)
+#         hbox_visualization.addWidget(self.button_visualization)
+#         hbox_visualization.addWidget(self.button_make_ev_cube)
+#         hbox_visualization.addWidget(self.label_vmin_slice)
+#         hbox_visualization.addWidget(self.textbox_vmin_slice)
+#         hbox_visualization.addWidget(self.label_vmax_slice)
+#         hbox_visualization.addWidget(self.textbox_vmax_slice)
+#         vbox.addLayout(hbox_visualization)
+# 
+#         self.setLayout(vbox)
         
 
     def change_display(self):
@@ -154,6 +167,17 @@ class Tab(QtGui.QWidget):
             self.tab.currentWidget().hdf5.close()
         self.tab.removeTab(self.tab.currentIndex())  
         
+    def connect_buttons(self):
+        self.ui.button_display_header.clicked.connect(self.display_header)
+        self.ui.button_export_spectrum.clicked.connect(self.export_spectrum)
+        self.ui.button_export_cube.clicked.connect(self.export_cube)
+        self.ui.button_wraith.clicked.connect(self.open_wraith)
+        self.ui.button_mayavi.clicked.connect(self.open_visualization)
+        self.ui.button_make_ev_cube.clicked.connect(self.make_ev_cube)
+        self.ui.edit_min.setText = str(self.data.xdata[0])
+        self.ui.edit_min.editingFinished.connect(self.update_visualization_settings)
+        self.ui.edit_max.setText = str(self.data.xdata[-1])
+        self.ui.edit_max.editingFinished.connect(self.update_visualization_settings)
     def connect_events(self):
         """connect to all the events we need"""
         self.cidpress = self.img.figure.canvas.mpl_connect(
@@ -208,13 +232,13 @@ class Tab(QtGui.QWidget):
         """
         export.export_cube(self.filename, self.data, self.dataview)
     
-    def initialize_vbox(self,label_vmin_slice, label_vmax_slice,
-                             textbox_vmin_slice, textbox_vmax_slice):
-        self.label_vmin_slice.setText('Min')
-        self.label_vmax_slice.setText('Max')
+    def initialize_vbox(self,label_min, label_max,
+                             edit_min, edit_max):
+        label_min.setText('Min')
+        label_max.setText('Max')
         xdata = analysis.xdata_calc(self.data, self.dataview)
-        textbox_vmin_slice.setText(str(xdata[0]))
-        textbox_vmax_slice.setText(str(xdata[-1]))
+        edit_min.setText(str(xdata[0]))
+        edit_max.setText(str(xdata[-1]))
         self.update_visualization_settings()
 
     def make_ev_cube(self):
@@ -258,8 +282,8 @@ class Tab(QtGui.QWidget):
         updates data view to have correct values from text boxes.
         data_stores input values in wavelength.
         """
-        min_input = float(self.textbox_vmin_slice.text())
-        max_input = float(self.textbox_vmax_slice.text())
+        min_input = float(self.ui.edit_min.text())
+        max_input = float(self.ui.edit_max.text())
         if self.dataview.display_ev:
             self.dataview.vmin_wavelength = 1240/max_input
             self.dataview.vmax_wavelength = 1240/min_input

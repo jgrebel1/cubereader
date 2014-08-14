@@ -41,6 +41,7 @@ class AppForm(object):
         ui_file.open(QtCore.QFile.ReadOnly); 
         self.ui = ui_loader.load(ui_file)
         ui_file.close()
+
         
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.close_tab)

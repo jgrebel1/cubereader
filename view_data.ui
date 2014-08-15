@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="4" column="0">
-     <widget class="QLabel" name="label">
+     <widget class="QLabel" name="label_imageslice">
       <property name="text">
        <string>Image Slice ev:</string>
       </property>

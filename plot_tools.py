@@ -35,6 +35,13 @@ def change_display(axes, data, dataview):
     
     return img2
 
+def change_display_pyqt(graph, dataview):
+    if dataview.display_ev:
+        text='ev'
+    else:
+        text='wavelength [nm]'
+    graph.setLabel(axis='bottom',text=text )
+
 def initialize_graph(axes, data, dataview):
     """
     initializes the graph on screen

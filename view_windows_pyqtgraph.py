@@ -56,7 +56,7 @@ class ViewData(QtGui.QMainWindow):
         pg.setConfigOptions(useWeave=False)
         self.imv = pg.ImageView()
 #         self.vLine_1, self.hLine_1 = self.cross_hair(self.imv)
-        self.dot = self.make_dot(self.imv)
+        self.square = self.make_dot(self.imv)
         
         self.imv.setMinimumSize(350, 350)
         plot_tools.plot_pyqt(self.imv,self.data , self.dataview)
@@ -72,7 +72,7 @@ class ViewData(QtGui.QMainWindow):
         self.set_slider_settings()
 
         self.connect_events()
-#         self.connect_shortcuts()
+        self.connect_shortcuts()
 #         self.show()
         
     def setup_graph(self):
@@ -95,6 +95,10 @@ class ViewData(QtGui.QMainWindow):
         self.curve1 = self.p1.plot()
         self.curve2 = self.p2.plot()
         plot_tools.graph_pyqt(self.curve1, self.curve2, self.data, self.dataview)
+        
+        #axes
+        plot_tools.change_display_pyqt(self.p1, self.dataview)
+        plot_tools.change_display_pyqt(self.p2, self.dataview)
 
         #add line inspection tool
         self.vLine_2 = pg.InfiniteLine(angle=90, movable=False)
@@ -108,10 +112,9 @@ class ViewData(QtGui.QMainWindow):
         """
         changes the view between ev and wavelength
         """
-        self.img2 = plot_tools.change_display(self.graph_axes,
-                                               self.data,
-                                               self.dataview)
-                                               
+        plot_tools.change_display_pyqt(self.p1, self.dataview)
+        plot_tools.change_display_pyqt(self.p2, self.dataview)
+        plot_tools.plot_pyqt(self.imv,self.data, self.dataview)                                       
         self.update_label() 
         
     def closeEvent(self, event):
@@ -133,22 +136,23 @@ class ViewData(QtGui.QMainWindow):
                      self.update_graphslicey_from_control)
         self.ui.ev.clicked.connect(self.show_ev)
         self.ui.wavelength.clicked.connect(self.show_wavelength)
+        self.square.sigRegionChanged.connect(self.roi_moved)
             
     def connect_shortcuts(self):
         self.shortcut_up = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Up")),
-                                           self)
+                                           self.ui)
         self.shortcut_up.activated.connect(self.move_up)
         
         self.shortcut_down = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Down")),
-                                           self)
+                                           self.ui)
         self.shortcut_down.activated.connect(self.move_down)
         
         self.shortcut_left = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Left")),
-                                           self)
+                                           self.ui)
         self.shortcut_left.activated.connect(self.move_left)
         
         self.shortcut_right = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Right")),
-                                           self)
+                                           self.ui)
         self.shortcut_right.activated.connect(self.move_right)
         
     def control_panel_update(self):
@@ -163,18 +167,19 @@ class ViewData(QtGui.QMainWindow):
     
     def make_dot(self, plot):
         
-        x = self.dataview.x + .5
-        y = self.dataview.y + .5
-        dot = pg.CircleROI(pos=(x,y),size=(5,5) )
+        x = self.dataview.x
+        y = self.dataview.y
+        dot = pg.RectROI(pos=(x,y),size=(1,1))
         plot.addItem(dot)
-
+        h = dot.getHandles()
+        dot.removeHandle(h[0])
         return dot
         
     def mouseMoved_graph(self, evt):
         pos = evt
         if self.p1.sceneBoundingRect().contains(pos):
             mousePoint = self.p1.vb.mapSceneToView(pos)
-            index = int(mousePoint.x())
+            index = analysis.get_index(mousePoint.x(), self.data, self.dataview)
             ydata = analysis.ydata_calc(self.data, self.dataview)
             if index > 0 and index < len(ydata):
                 self.graph_label.setText("<span style='font-size: 12pt'>x=%0.1f,  y1=%0.3f" % (mousePoint.x(), ydata[index]))
@@ -210,6 +215,13 @@ class ViewData(QtGui.QMainWindow):
         navigation_tools.move_up(self.dataview)
         self.update_graph()
         
+    def roi_moved(self):
+        try:
+            self.dataview.x, self.dataview.y = self.square.pos()
+            self.update_graph()
+        except RuntimeError:
+            pass
+        
     def set_slider_settings(self):
         self.ui.slider.setRange(1, self.dataview.number_of_slices)
         self.ui.slider.setValue(1)
@@ -225,10 +237,7 @@ class ViewData(QtGui.QMainWindow):
     def show_wavelength(self):      
         self.dataview.display_ev = False
         self.change_display()
-        plot_tools.plot_image(self.img,
-                              self.img_axes,
-                              self.data,
-                              self.dataview)
+        
     def update_control(self):
         xdata = analysis.xdata_calc(self.data, self.dataview) 
         slice1 = self.dataview.slider_val
@@ -248,7 +257,9 @@ class ViewData(QtGui.QMainWindow):
             self.dataview.x = int(self.ui.graphslicex.text())
         except:
             return
-        self.marker.set_xdata(self.dataview.x)
+        x = self.dataview.x
+        y = self.dataview.y
+        self.square.setPos((x,y))
         try:
             self.update_graph()
         except ValueError:
@@ -265,7 +276,9 @@ class ViewData(QtGui.QMainWindow):
             self.dataview.y = int(self.ui.graphslicey.text())
         except:
             return
-        self.marker.set_ydata(self.dataview.y)
+        x = self.dataview.x
+        y = self.dataview.y
+        self.square.setPos((x,y))
         try:
             self.update_graph()
         except ValueError:
@@ -281,21 +294,17 @@ class ViewData(QtGui.QMainWindow):
             slice_input = float(self.ui.imageslice.text())
         except Exception as e:
             print e
-        if self.dataview.display_ev:
-            imageval = analysis.ev_to_index(slice_input, self.data) 
-            self.ui.slider.setValue(imageval) 
-        else:      
-            imageval = analysis.wavelength_to_index(slice_input, self.data)
-            self.ui.slider.setValue(self.dataview.number_of_slices - 1-imageval) 
-#         self.update_graph()
+        index = analysis.get_index(slice_input,
+                                   self.data,
+                                   self.dataview)
+        value = analysis.get_slider_value(index, self.dataview)
+        self.ui.slider.setValue(value)
         plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
         
     def update_graph(self):
-        x = self.dataview.x+.5
-        y = self.dataview.y+.5
-#         self.vLine_1.setPos(x)
-#         self.hLine_1.setPos(y)
-        self.dot.setPos((x,y))
+        x = self.dataview.x
+        y = self.dataview.y
+        self.square.setPos((x,y))
         plot_tools.graph_pyqt(self.curve1, self.curve2, self.data, self.dataview)
         self.update_control()
         
@@ -314,18 +323,15 @@ class ViewData(QtGui.QMainWindow):
             self.dataview.slider_val = sliderval-1
         else:
             self.dataview.slider_val = self.dataview.number_of_slices - sliderval           
-#         plot_tools.plot_image(self.img,
-#                               self.img_axes,
-#                               self.data,
-#                               self.dataview)
+
         plot_tools.plot_pyqt(self.imv,self.data, self.dataview)
         self.update_control()
 
     def update_label(self):
-        if self.ev.isChecked():
-            self.imageslicelabel.setText('Image Slice ev:')
+        if self.ui.ev.isChecked():
+            self.ui.label_imageslice.setText('Image Slice ev:')
         else:
-            self.imageslicelabel.setText('Image Slice wavelength:')
+            self.ui.label_imageslice.setText('Image Slice wavelength:')
             
             
 class ViewFit(QtGui.QMainWindow):

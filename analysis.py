@@ -113,6 +113,13 @@ def find_maxval(dataset):
         if np.amax(i) > maxval:
             maxval = np.amax(i)
     return maxval
+
+def get_index(value, data, dataview):
+    if dataview.display_ev:
+        index = ev_to_index(value, data) 
+    else:
+        index = wavelength_to_index(value, data)
+    return index
     
 def get_file_basename(path_name):
     """gets file basename without extension"""
@@ -123,6 +130,13 @@ def get_file_basename(path_name):
 def get_dimensions(ycube):
     (rows, columns, slices) = np.shape(ycube[...])
     return (rows, columns, slices)
+
+def get_slider_value(index, dataview):
+    if dataview.display_ev:
+        value = index
+    else:
+        value = dataview.number_of_slices - 1-index
+    return value
     
 def get_xdata(hdf5_axis):
     """gets xdata from hyperspy hdf5 file"""

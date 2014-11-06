@@ -281,8 +281,6 @@ def wavelength_to_index2(wavelength, data):
     index = ev_to_index2(ev, data)
     return index
     
-
-    
 def xdata_calc(data, dataview):
     """
     returns xdata based on data type and current display mode from wavelength
@@ -338,31 +336,26 @@ def xdata_calc_cubes(data, dataview):
         elif data.xdata_info['data_type'] == 'wavelength':
             xdata = data.xdata
     return xdata
+
+def ydata_sum(slice, data, dataview):
+    input_ydata = data.ycube[slice]  
+    summed_ydata = np.apply_over_axes(np.sum, input_ydata, [0,1])
+    input_xdata = data.xdata
+    dtype = dataview.xdata_info['data_type']
+    display_ev = dataview.display_ev
+    ydata = ydata_calc2(summed_ydata, input_xdata, dtype, display_ev)  
+
+    return ydata
     
 def ydata_calc(data, dataview):
     """
     returns ydata based on data type and current display mode.
     """    
-    if dataview.display_ev:
-        if data.xdata_info['data_type'] == 'ev':
-            ydata = data.ycube[dataview.y, dataview.x,:]        
-        elif data.xdata_info['data_type'] == 'wavelength':
-            wavelength_data = data.ycube[dataview.y, dataview.x,:]
-            ydata = []
-            for index, lambda_photon_count in enumerate(wavelength_data):
-                ev_photon_count = (lambda_photon_count)*(data.xdata[index]**2/1240)
-                ydata.append(ev_photon_count)
-            ydata = np.array(ydata)
-    elif not dataview.display_ev: 
-        if data.xdata_info['data_type'] == 'ev':
-            ev_data = data.ycube[dataview.y, dataview.x,:]
-            ydata = []
-            for index,ev_photon_count in enumerate(ev_data):
-                wavelength_photon_count = (ev_photon_count)*(1240/data.xdata[index])
-                ydata.append(wavelength_photon_count)
-            ydata = np.array(ydata)
-        elif data.xdata_info['data_type'] == 'wavelength':
-            ydata = data.ycube[dataview.y, dataview.x,:]        
+    input_ydata = data.ycube[dataview.y, dataview.x,:]  
+    input_xdata = data.xdata
+    dtype = data.xdata_info['data_type']
+    display_ev = dataview.display_ev
+    ydata = ydata_calc2(input_ydata, input_xdata, dtype, display_ev)     
     return ydata
     
 def ydata_calc2(input_ydata, input_xdata, dtype, display_ev):

@@ -25,6 +25,8 @@ class DataView():
         self.vmin_wavelength = 300
         self.vmax_wavelength = 800
         self.auto_color = True
+        self.average = False
+        self.slice = (slice(0),slice(0),slice(None))
         
         
 class FitDataView():

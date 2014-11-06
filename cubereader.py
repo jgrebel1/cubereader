@@ -1,8 +1,6 @@
 """
 @authors: Joel Grebel and Aaron Hammack
 
-used Eli Bendersky's (eliben@gmail.com) embeding matplotlib into pyqt 
-Gui Demo for some of the structure.
 """
 
 

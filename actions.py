@@ -83,3 +83,8 @@ def high_pass(a):
     img_back = np.fft.ifft2(f_ishift)
     img_back = np.abs(img_back)
     return img_back
+def crop_reshape(a):
+    a_flat = a.flatten()
+    a_crop = a_flat[-1024:]
+    a_reshape = np.reshape(a_crop, (16,64))
+    return a_reshape
